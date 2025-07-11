@@ -1,7 +1,7 @@
 [project]
 name = "klaraflow"
 version = "0.1.0"
-description = ""
+description = "KlaraFlow HRM"
 authors = [
     {name = "Shahryar Khan",email = "shahryar2k3@gmail.com"}
 ]
