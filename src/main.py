@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config.database import db_manager, get_db
+import uvicorn
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -14,7 +15,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="KlaraFlow HRM",
     description="Multi-tenant HRM SaaS platform",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # This is like your Express route
@@ -36,5 +37,5 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         }
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
-
-# poetry run uvicorn src.main:app --reload
+    
+# poetry run uvicorn src.main:app --reload --port 3000
