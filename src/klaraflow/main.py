@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.config.database import db_manager, get_db
+from klaraflow.config.database import db_manager, get_db
 import uvicorn
 
 @asynccontextmanager

@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
-from src.config.settings import settings
+from klaraflow.config.settings import settings
 
 class DatabaseManager:
     def __init__(self):
