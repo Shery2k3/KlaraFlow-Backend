@@ -2,14 +2,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from klaraflow.config.database import db_manager, get_db
-import uvicorn
+from klaraflow.api.v1 import auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup - like your Express connectDB()
+    # On startup
     await db_manager.connect()
     yield
-    # Shutdown - clean up connections
+    # On shutdown
     await db_manager.disconnect()
 
 app = FastAPI(
@@ -18,7 +18,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# This is like your Express route
+# Welcome route
 @app.get("/")
 async def read_root():
     return {"message": "KlaraFlow HRM API", "status": "running"}
@@ -37,5 +37,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         }
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
+    
+app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["Authentication"])
     
 # poetry run uvicorn src.main:app --reload --port 3000
