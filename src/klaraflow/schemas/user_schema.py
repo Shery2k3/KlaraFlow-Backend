@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from .company_schema import CompanyPublic
 from datetime import datetime
 
 # Data shape for creating a user
@@ -11,6 +12,8 @@ class UserPublic(BaseModel):
   id: int
   email: EmailStr
   is_active: bool
+  role: str
+  company: CompanyPublic
   created_at: datetime
   
   class Config:
