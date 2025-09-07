@@ -11,7 +11,8 @@ from klaraflow.core.security import get_hash_password
 # This is the data for your first company and its admin
 COMPANY_NAME = "KlaraFlow"
 ADMIN_EMAIL = "admin@klaraflow.io"
-ADMIN_PASSWORD = "klaraflow" # Change this!
+ADMIN_PASSWORD = "klaraflow"  # Change this!
+
 
 async def seed_database():
     """
@@ -19,10 +20,12 @@ async def seed_database():
     and seeds the initial company and admin user.
     """
     print("--- Starting Database Seeding ---")
-    
+
     # Create an engine and session factory for this standalone script
     engine = create_async_engine(settings.DATABASE_URL_ASYNC, echo=False)
-    AsyncSessionFactory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    AsyncSessionFactory = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     # Create all tables defined by our models
     async with engine.begin() as conn:
@@ -52,15 +55,16 @@ async def seed_database():
             email=ADMIN_EMAIL,
             hashed_password=hashed_password,
             company_id=db_company.id,
-            role="admin"
+            role="admin",
         )
         session.add(db_admin)
-        
+
         await session.commit()
         print("✅ Seeding complete!")
 
     await engine.dispose()
     print("--- Database Seeding Finished ---")
+
 
 if __name__ == "__main__":
     asyncio.run(seed_database())
