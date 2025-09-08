@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from klaraflow.config.database import db_manager, get_db
-from klaraflow.api.v1 import auth_router
+from klaraflow.api.v1 import auth_router, onboarding_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,5 +39,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         return {"status": "unhealthy", "error": str(e)}
     
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["Authentication"])
-    
+app.include_router(onboarding_router.router, prefix="/api/v1/onboarding", tags=["Employee Onboarding"])
+
 # poetry run uvicorn src.main:app --reload --port 3000
+# poetry run poe dev

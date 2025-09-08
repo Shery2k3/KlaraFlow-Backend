@@ -14,9 +14,9 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED
 )
 async def invite_employee(
-    invite_data: onboarding_schema.OnboardingSessionCreate,
+    invite_data: onboarding_schema.OnboardingInviteRequest,
     db: AsyncSession = Depends(get_db),
-    current_admin = Depends(get_current_active_user) # Placeholder for auth
+    current_admin = Depends(get_current_active_user) 
 ):
     """
     Admin endpoint to invite a new employee to the platform.

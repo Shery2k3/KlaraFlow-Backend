@@ -1,20 +1,22 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
-# --- Onboarding Session Schemas ---
+class OnboardingInviteRequest(BaseModel):
+    email: EmailStr
+    firstName: str
+    lastName: str
+    phone: str | None = None
+    gender: str
+    userRole: str
+    designation: str | None = None
+    department: str | None = None
+    onboardingTemplateId: str
+    
 
-# Base properties shared by other schemas
-class OnboardingSessionBase(BaseModel):
-    new_employee_email: EmailStr
-
-# Properties to receive via API on creation
-class OnboardingSessionCreate(OnboardingSessionBase):
-    pass
-
-# Properties to return to client
-class OnboardingSessionRead(OnboardingSessionBase):
+class OnboardingSessionRead(BaseModel):
     id: int
     company_id: int
+    new_employee_email: EmailStr
     status: str
     created_at: datetime
     expires_at: datetime
