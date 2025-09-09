@@ -56,6 +56,7 @@ async def seed_database():
             hashed_password=hashed_password,
             company_id=db_company.id,
             role="admin",
+            is_active=True,
         )
         session.add(db_admin)
 

@@ -2,16 +2,27 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 class OnboardingInviteRequest(BaseModel):
-    email: EmailStr
+    # Mandatory fields from FE
+    empId: str
     firstName: str
     lastName: str
-    phone: str | None = None
+    email: EmailStr
     gender: str
     userRole: str
+    
+    # Optional fields from FE
+    phone: str | None = None
     designation: str | None = None
     department: str | None = None
-    onboardingTemplateId: str
-    
+    jobType: str | None = None
+    hiringDate: str | None = None
+    onboardingTemplateId: str | None = None
+    reportTo: str | None = None
+    grade: str | None = None
+    probationPeriod: str | None = None
+    dateOfBirth: str | None = None
+    maritalStatus: str | None = None
+    nationality: str | None = None
 
 class OnboardingSessionRead(BaseModel):
     id: int
