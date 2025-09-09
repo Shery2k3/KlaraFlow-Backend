@@ -1,23 +1,31 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from ..base import Base # Navigate up to the shared base
-import enum
-
-class OnboardingStatus(str, enum.Enum):
-    PENDING = "pending"
-    COMPLETED = "completed"
-    EXPIRED = "expired"
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
+from klaraflow.models.base import Base
 
 class OnboardingSession(Base):
-    __tablename__ = 'onboarding_sessions'
+    __tablename__ = "onboarding_sessions"
     
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     new_employee_email = Column(String, nullable=False, index=True)
-    invitation_token = Column(String, nullable=False, unique=True)
-    status = Column(Enum(OnboardingStatus), default=OnboardingStatus.PENDING, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    expires_at = Column(DateTime(timezone=True), nullable=False)
-
-    tasks = relationship("OnboardingTask", back_populates="session", cascade="all, delete-orphan")
+    status = Column(String, default="pending")
+    
+    invitation_token = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    
+    empId = Column(String, nullable=True)
+    firstName = Column(String, nullable=True)
+    lastName = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    gender = Column(String, nullable=True)
+    userRole = Column(String, nullable=True)
+    designation = Column(String, nullable=True)
+    department = Column(String, nullable=True)
+    jobType = Column(String, nullable=True)
+    hiringDate = Column(String, nullable=True)
+    reportTo = Column(String, nullable=True)
+    grade = Column(String, nullable=True)
+    probationPeriod = Column(String, nullable=True)
+    dateOfBirth = Column(String, nullable=True)
+    maritalStatus = Column(String, nullable=True)
+    nationality = Column(String, nullable=True)

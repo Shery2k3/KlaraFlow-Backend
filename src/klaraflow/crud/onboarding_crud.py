@@ -22,10 +22,25 @@ async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInvite
     db_session = OnboardingSession(
         company_id=company_id,
         new_employee_email=invite_data.email,
-        # You might add columns to OnboardingSession to store this pre-filled data
-        # for the employee to review. For now, we'll just pass the email.
         invitation_token=invitation_token,
-        expires_at=expires_at
+        expires_at=expires_at,
+        created_at=datetime.now(timezone.utc),
+        empId=invite_data.empId,
+        firstName=invite_data.firstName,
+        lastName=invite_data.lastName,
+        phone=invite_data.phone,
+        gender=invite_data.gender,
+        userRole=invite_data.userRole,
+        designation=invite_data.designation,
+        department=invite_data.department,
+        jobType=invite_data.jobType,
+        hiringDate=invite_data.hiringDate,
+        reportTo=invite_data.reportTo,
+        grade=invite_data.grade,
+        probationPeriod=invite_data.probationPeriod,
+        dateOfBirth=invite_data.dateOfBirth,
+        maritalStatus=invite_data.maritalStatus,
+        nationality=invite_data.nationality
     )
     db.add(db_session)
     await db.commit()
