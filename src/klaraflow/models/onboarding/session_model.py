@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
-from klaraflow.models.base import Base
+from ..base import Base
 
 class OnboardingSession(Base):
     __tablename__ = "onboarding_sessions"
@@ -10,8 +10,8 @@ class OnboardingSession(Base):
     status = Column(String, default="pending")
     
     invitation_token = Column(String, nullable=False, unique=True, index=True)
-    created_at = Column(DateTime, nullable=False)
-    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     
     empId = Column(String, nullable=True)
     firstName = Column(String, nullable=True)

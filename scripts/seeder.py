@@ -6,6 +6,9 @@ from klaraflow.models.base import Base
 from klaraflow.models.company_model import Company
 from klaraflow.models.user_model import User
 from klaraflow.core.security import get_hash_password
+from klaraflow.models.onboarding.session_model import OnboardingSession
+from klaraflow.models.onboarding.task_model import OnboardingTask
+
 
 # --- Configuration ---
 # This is the data for your first company and its admin
