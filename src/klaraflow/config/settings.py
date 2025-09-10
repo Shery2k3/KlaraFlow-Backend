@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     DEBUG: bool = False
     ENVIRONMENT: str
+    JWT_ALG: str
 
     # Email service
     MAIL_USERNAME: str
