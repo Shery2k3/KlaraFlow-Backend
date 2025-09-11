@@ -1,11 +1,25 @@
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from fastapi import HTTPException, status
 from klaraflow.models.onboarding.session_model import OnboardingSession
 from klaraflow.schemas.onboarding_schema import OnboardingInviteRequest
 from klaraflow.core.security import create_access_token
 from klaraflow.core.email_service import send_onboarding_invitation
 
 async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInviteRequest, company_id: int):
+    #? Check for existing pending invites
+    existing_session = select(OnboardingSession).where(
+        OnboardingSession.new_employee_email == invite_data.email,
+        OnboardingSession.status == "pending"
+    )
+    result = await db.execute(existing_session)
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An active invitation has already been sent to this email address."
+        )
+    
     expires_delta = timedelta(hours=24)
     expires_at = datetime.now(timezone.utc) + expires_delta
     
