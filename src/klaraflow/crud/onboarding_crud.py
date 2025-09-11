@@ -3,9 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
 from klaraflow.models.onboarding.session_model import OnboardingSession
-from klaraflow.schemas.onboarding_schema import OnboardingInviteRequest
-from klaraflow.core.security import create_access_token
+from klaraflow.schemas.onboarding_schema import OnboardingInviteRequest, OnboardingActivationRequest
+from klaraflow.core.security import create_access_token, get_hash_password
 from klaraflow.core.email_service import send_onboarding_invitation
+from klaraflow.crud import user_crud
 
 async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInviteRequest, company_id: int):
     #? Check for existing pending invites
@@ -66,3 +67,44 @@ async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInvite
     )
     
     return db_session
+
+async def get_session_by_token(db: AsyncSession, token: str) -> OnboardingSession:
+    statement = select(OnboardingSession).where(OnboardingSession.invitation_token == token)
+    result = await db.execute(statement)
+    session = result.scalar_one_or_none()
+    
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation link is invalid or has been used.")
+    
+    if session.status != "pending":
+         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invitation has already been completed.")
+
+    if session.expires_at < datetime.now(timezone.utc):
+        session.status = "expired"
+        await db.commit()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invitation has expired.")
+        
+    return session
+
+async def activate_employee_account(db: AsyncSession, *, activation_data: OnboardingActivationRequest):
+    # 1. Get and validate the session using our new function
+    session = await get_session_by_token(db, token=activation_data.token)
+    
+    # 2. Hash the new password provided by the employee
+    hashed_password = get_hash_password(activation_data.password)
+    
+    # 3. Create the permanent user record in the 'users' table
+    new_user = await user_crud.create_user_from_onboarding(
+        db,
+        session=session,
+        hashed_password=hashed_password
+    )
+    
+    # 4. Mark the temporary onboarding session as 'completed'
+    session.status = "completed"
+    await db.commit()
+    
+    # 5. Create a login token for the new user so they are immediately logged in
+    login_token = create_access_token(data={"sub": new_user.email})
+    
+    return {"access_token": login_token, "token_type": "bearer"}

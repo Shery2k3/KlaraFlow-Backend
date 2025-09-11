@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from klaraflow.config.database import db_manager, get_db
 from klaraflow.api.v1 import auth_router, onboarding_router
@@ -16,6 +17,18 @@ app = FastAPI(
     title="KlaraFlow HRM",
     description="Multi-tenant HRM SaaS platform",
     lifespan=lifespan,
+)
+
+origins = [
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Welcome route

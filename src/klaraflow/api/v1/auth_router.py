@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from klaraflow.crud import user_crud
-from klaraflow.schemas import user_schema
+from klaraflow.crud import user_crud, onboarding_crud
+from klaraflow.schemas import user_schema, onboarding_schema
 from klaraflow.config.database import get_db
 from klaraflow.core.security import create_access_token, verify_password
 
@@ -29,3 +29,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
         )
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/activate", response_model=user_schema.Token)
+async def activate_account(
+    activation_data: onboarding_schema.OnboardingActivationRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    return await onboarding_crud.activate_employee_account(db, activation_data=activation_data)

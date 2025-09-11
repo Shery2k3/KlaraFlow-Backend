@@ -9,6 +9,8 @@ class User(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     
+    empId = Column(String, nullable=True, unique=True)
+    
     # --- Multi-tenancy Key ---
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     
@@ -33,3 +35,11 @@ class User(Base):
     gender = Column(String, nullable=True)
     designation = Column(String, nullable=True)
     department = Column(String, nullable=True)
+    jobType = Column(String, nullable=True)
+    hiringDate = Column(String, nullable=True)
+    reportTo = Column(String, nullable=True)
+    grade = Column(String, nullable=True)
+    probationPeriod = Column(String, nullable=True)
+    dateOfBirth = Column(String, nullable=True)
+    nationality = Column(String, nullable=True)
+    maritalStatus = Column(String, nullable=True)

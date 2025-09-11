@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from klaraflow.schemas.user_schema import Token
 
 class OnboardingInviteRequest(BaseModel):
     # Mandatory fields from FE
@@ -34,3 +35,29 @@ class OnboardingSessionRead(BaseModel):
 
     class Config:
         from_attributes = True
+        
+class OnboardingSessionDataResponse(BaseModel):
+    new_employee_email: EmailStr
+    firstName: str | None
+    lastName: str | None
+    empId: str | None
+    phone: str | None
+    gender: str | None
+    userRole: str | None
+    designation: str | None
+    department: str | None
+    jobType: str | None
+    hiringDate: str | None
+    reportTo: str | None
+    grade: str | None
+    probationPeriod: str | None
+    dateOfBirth: str | None
+    maritalStatus: str | None
+    nationality: str | None
+
+    class Config:
+        from_attributes = True
+        
+class OnboardingActivationRequest(BaseModel):
+    token: str
+    password: str

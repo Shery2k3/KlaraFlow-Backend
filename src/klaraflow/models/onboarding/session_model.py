@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from ..base import Base
 
 class OnboardingSession(Base):
@@ -29,3 +30,5 @@ class OnboardingSession(Base):
     dateOfBirth = Column(String, nullable=True)
     maritalStatus = Column(String, nullable=True)
     nationality = Column(String, nullable=True)
+    
+    tasks = relationship("OnboardingTask", back_populates="session")
