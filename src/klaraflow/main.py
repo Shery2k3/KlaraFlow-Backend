@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from klaraflow.config.database import db_manager, get_db
 from klaraflow.api.v1 import auth_router, onboarding_router
-from klaraflow.core.exceptions import api_exception_handler, validation_exception_handler, APIException
+from klaraflow.base.exceptions import api_exception_handler, validation_exception_handler, APIException
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

@@ -5,8 +5,8 @@ from klaraflow.crud import user_crud, onboarding_crud
 from klaraflow.schemas import user_schema, onboarding_schema
 from klaraflow.config.database import get_db
 from klaraflow.core.security import create_access_token, verify_password
-from klaraflow.core.exceptions import APIException
-from klaraflow.core.responses import create_response
+from klaraflow.base.exceptions import APIException
+from klaraflow.base.responses import create_response
 
 router = APIRouter()
 

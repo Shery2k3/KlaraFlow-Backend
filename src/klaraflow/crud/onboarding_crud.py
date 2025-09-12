@@ -7,8 +7,8 @@ from klaraflow.schemas.onboarding_schema import OnboardingInviteRequest, Onboard
 from klaraflow.core.security import create_access_token, get_hash_password
 from klaraflow.core.email_service import send_onboarding_invitation
 from klaraflow.crud import user_crud
-from klaraflow.core.responses import create_response
-from klaraflow.core.exceptions import APIException
+from klaraflow.base.responses import create_response
+from klaraflow.base.exceptions import APIException
 
 async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInviteRequest, company_id: int):
     #? Check for existing pending invites

@@ -7,8 +7,8 @@ from klaraflow.config.database import get_db
 from klaraflow.dependencies.auth import get_current_active_admin
 from klaraflow.models.user_model import User
 from klaraflow.schemas.user_schema import Token
-from klaraflow.core.responses import create_response
-from klaraflow.core.exceptions import APIException
+from klaraflow.base.responses import create_response
+from klaraflow.base.exceptions import APIException
 
 router = APIRouter()
 
