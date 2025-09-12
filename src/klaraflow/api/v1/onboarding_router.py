@@ -7,13 +7,14 @@ from klaraflow.config.database import get_db
 from klaraflow.dependencies.auth import get_current_active_admin
 from klaraflow.models.user_model import User
 from klaraflow.schemas.user_schema import Token
+from klaraflow.core.responses import create_response
+from klaraflow.core.exceptions import APIException
 
 router = APIRouter()
 
 @router.post(
     "/invite", 
-    response_model=onboarding_schema.OnboardingSessionRead,
-    status_code=status.HTTP_201_CREATED
+    response_model=onboarding_schema.OnboardingSessionRead
 )
 async def invite_employee(
     invite_data: onboarding_schema.OnboardingInviteRequest,
@@ -29,7 +30,11 @@ async def invite_employee(
         invite_data=invite_data,
         company_id=current_admin.company_id
     )
-    return session
+    return create_response(
+        data=session,
+        message="Invitation sent successfully",
+        status_code=status.HTTP_201_CREATED
+    )
 
 @router.get("/session/{token}", response_model=onboarding_schema.OnboardingSessionDataResponse)
 async def get_onboarding_session_data(
@@ -37,4 +42,8 @@ async def get_onboarding_session_data(
     db: AsyncSession = Depends(get_db)
 ):
     session = await onboarding_crud.get_session_by_token(db, token=token)
-    return session
+    return create_response(
+        data=session,
+        message="Session data retrieved successfully",
+        status_code=status.HTTP_200_OK
+    )   

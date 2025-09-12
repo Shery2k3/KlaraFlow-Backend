@@ -7,6 +7,8 @@ from klaraflow.schemas.onboarding_schema import OnboardingInviteRequest, Onboard
 from klaraflow.core.security import create_access_token, get_hash_password
 from klaraflow.core.email_service import send_onboarding_invitation
 from klaraflow.crud import user_crud
+from klaraflow.core.responses import create_response
+from klaraflow.core.exceptions import APIException
 
 async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInviteRequest, company_id: int):
     #? Check for existing pending invites
@@ -16,10 +18,7 @@ async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInvite
     )
     result = await db.execute(existing_session)
     if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="An active invitation has already been sent to this email address."
-        )
+        raise APIException(status_code=status.HTTP_409_CONFLICT, message="An active invitation for this email already exists.", errors=["Duplicate invitation."])
     
     expires_delta = timedelta(hours=24)
     expires_at = datetime.now(timezone.utc) + expires_delta
@@ -74,15 +73,15 @@ async def get_session_by_token(db: AsyncSession, token: str) -> OnboardingSessio
     session = result.scalar_one_or_none()
     
     if not session:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation link is invalid or has been used.")
+        raise APIException(status_code=status.HTTP_404_NOT_FOUND, message="Invitation link is invalid or has been used.", errors=["Invalid or used token."])
     
     if session.status != "pending":
-         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invitation has already been completed.")
+        raise APIException(status_code=status.HTTP_400_BAD_REQUEST, message="This invitation has already been used or is no longer valid.", errors=["Invitation not pending."])
 
     if session.expires_at < datetime.now(timezone.utc):
         session.status = "expired"
         await db.commit()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invitation has expired.")
+        raise APIException(status_code=status.HTTP_400_BAD_REQUEST, message="This invitation link has expired.", errors=["Token expired."])
         
     return session
 

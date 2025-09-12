@@ -5,6 +5,8 @@ from klaraflow.crud import user_crud, onboarding_crud
 from klaraflow.schemas import user_schema, onboarding_schema
 from klaraflow.config.database import get_db
 from klaraflow.core.security import create_access_token, verify_password
+from klaraflow.core.exceptions import APIException
+from klaraflow.core.responses import create_response
 
 router = APIRouter()
 
@@ -22,17 +24,29 @@ async def signup(user: user_schema.UserCreate, db: AsyncSession = Depends(get_db
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     user = await user_crud.get_user_by_email(db=db, email=form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Incorrect email or password",
-        headers={"WWW-Authenticate": "Bearer"}
+        raise APIException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            message="Incorrect email or password",
+            errors=["Authentication failed"]
         )
     access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
-
+    token_data = user_schema.Token(access_token=access_token, token_type="bearer")
+    
+    return create_response(
+        data=token_data.model_dump(), 
+        message="Login successful",
+        status_code=status.HTTP_200_OK
+    )
+    
 @router.post("/activate", response_model=user_schema.Token)
 async def activate_account(
     activation_data: onboarding_schema.OnboardingActivationRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    return await onboarding_crud.activate_employee_account(db, activation_data=activation_data)
+    token_data = await onboarding_crud.activate_employee_account(db, activation_data=activation_data)
+    
+    return create_response(
+        data=token_data, 
+        message="Account activated successfully",
+        status_code=status.HTTP_200_OK
+    )
