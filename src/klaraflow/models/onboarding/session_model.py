@@ -7,6 +7,7 @@ class OnboardingSession(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    template_id = Column(Integer, ForeignKey("onboarding_templates.id"), nullable=True)  # Reference to onboarding template
     new_employee_email = Column(String, nullable=False, index=True)
     status = Column(String, default="pending")
     
@@ -32,3 +33,4 @@ class OnboardingSession(Base):
     nationality = Column(String, nullable=True)
     
     tasks = relationship("OnboardingTask", back_populates="session")
+    template = relationship("OnboardingTemplate", back_populates="sessions")

@@ -11,3 +11,5 @@ class Company(Base):
   created_at = Column(DateTime(timezone=True), server_default=func.now())
   
   users = relationship("User", back_populates='company')
+  document_templates = relationship("DocumentTemplate", back_populates="company")
+  onboarding_templates = relationship("OnboardingTemplate", back_populates="company")

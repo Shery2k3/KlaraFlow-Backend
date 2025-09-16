@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from klaraflow.crud import user_crud, onboarding_crud
 from klaraflow.schemas import user_schema, onboarding_schema
@@ -20,20 +19,37 @@ async def signup(user: user_schema.UserCreate, db: AsyncSession = Depends(get_db
         )
     return await user_crud.create_user(db=db, user=user)
   
-@router.post("/login", response_model=user_schema.Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    user = await user_crud.get_user_by_email(db=db, email=form_data.username)
-    if not user or not verify_password(form_data.password, user.hashed_password):
+@router.post("/login")
+async def login(login_data: user_schema.UserLogin, db: AsyncSession = Depends(get_db)):
+    user = await user_crud.get_user_by_email(db=db, email=login_data.email)
+    if not user or not verify_password(login_data.password, user.hashed_password):
         raise APIException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             message="Incorrect email or password",
             errors=["Authentication failed"]
         )
     access_token = create_access_token(data={"sub": user.email})
-    token_data = user_schema.Token(access_token=access_token, token_type="bearer")
+    
+    # Create response matching frontend expectations
+    response_data = {
+        "token": access_token,
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "firstName": user.first_name or "",
+            "lastName": user.last_name or "",
+            "role": user.role,
+            "department": user.department or "",
+            "designation": user.designation or "",
+            "status": "active" if user.is_active else "inactive",
+            "createdAt": user.created_at.isoformat() if user.created_at else "",
+            "updatedAt": user.created_at.isoformat() if user.created_at else ""  # Use created_at as fallback
+        },
+        "expiresIn": 3600  # 1 hour in seconds
+    }
     
     return create_response(
-        data=token_data.model_dump(), 
+        data=response_data, 
         message="Login successful",
         status_code=status.HTTP_200_OK
     )

@@ -9,7 +9,7 @@ class UserCreate(BaseModel):
   
 # Data shape for user login
 class UserLogin(BaseModel):
-    username: EmailStr
+    email: EmailStr
     password: str
   
 # Data shape for returning a user to public
