@@ -30,8 +30,11 @@ async def create_onboarding_template(
         company_id=current_admin.company_id
     )
     
+    # Convert SQLAlchemy model to Pydantic schema
+    template_response = onboarding_schema.OnboardingTemplateRead.model_validate(template)
+    
     return create_response(
-        data=template,
+        data=template_response.model_dump(mode='json'),
         message="Onboarding template created successfully",
         status_code=status.HTTP_201_CREATED
     )
@@ -55,8 +58,11 @@ async def get_onboarding_templates(
         limit=limit
     )
     
+    # Convert SQLAlchemy models to Pydantic schemas
+    templates_response = [onboarding_schema.OnboardingTemplateRead.model_validate(template) for template in templates]
+    
     return create_response(
-        data=templates,
+        data=[template.model_dump(mode='json') for template in templates_response],
         message="Onboarding templates retrieved successfully",
         status_code=status.HTTP_200_OK
     )
@@ -84,8 +90,11 @@ async def get_onboarding_template(
             message="Onboarding template not found"
         )
     
+    # Convert SQLAlchemy model to Pydantic schema
+    template_response = onboarding_schema.OnboardingTemplateRead.model_validate(template)
+    
     return create_response(
-        data=template,
+        data=template_response.model_dump(mode='json'),
         message="Onboarding template retrieved successfully",
         status_code=status.HTTP_200_OK
     )
@@ -109,8 +118,11 @@ async def update_onboarding_template(
         company_id=current_admin.company_id
     )
     
+    # Convert SQLAlchemy model to Pydantic schema
+    template_response = onboarding_schema.OnboardingTemplateRead.model_validate(template)
+    
     return create_response(
-        data=template,
+        data=template_response.model_dump(mode='json'),
         message="Onboarding template updated successfully",
         status_code=status.HTTP_200_OK
     )
