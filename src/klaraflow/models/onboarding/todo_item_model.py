@@ -22,5 +22,4 @@ class TodoItem(Base):
     # Relationships
     template = relationship("OnboardingTemplate", back_populates="todos")
     
-    # For tracking completion in sessions
-    session_todos = relationship("OnboardingTask", back_populates="todo_item")
+    # Note: Relationship to OnboardingTask will be added when session functionality is implemented

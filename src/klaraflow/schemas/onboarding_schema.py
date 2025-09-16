@@ -1,11 +1,8 @@
+from __future__ import annotations
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import List, Optional
 from klaraflow.schemas.user_schema import Token
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from klaraflow.schemas.document_schema import DocumentTemplateRead
 
 class OnboardingInviteRequest(BaseModel):
     # Mandatory fields from FE
@@ -139,3 +136,9 @@ class OnboardingDataRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Import DocumentTemplateRead for forward reference resolution
+from klaraflow.schemas.document_schema import DocumentTemplateRead
+
+# Rebuild model to resolve forward references after import
+OnboardingTemplateRead.model_rebuild()

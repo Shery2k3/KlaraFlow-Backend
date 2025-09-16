@@ -1,10 +1,15 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import insert, delete
 from fastapi import status
 from typing import List, Optional
 
-from klaraflow.models.onboarding.onboarding_template_model import OnboardingTemplate
+from klaraflow.models.onboarding.onboarding_template_model import (
+    OnboardingTemplate,
+    onboarding_template_required_documents,
+    onboarding_template_optional_documents
+)
 from klaraflow.models.onboarding.todo_item_model import TodoItem
 from klaraflow.models.settings.document_template_model import DocumentTemplate
 from klaraflow.schemas.onboarding_schema import (
@@ -42,23 +47,43 @@ async def create_onboarding_template(
     
     # Associate required documents
     if template_data.required_document_ids:
+        # Verify document templates belong to the same company
         required_docs = await db.execute(
-            select(DocumentTemplate).where(
+            select(DocumentTemplate.id).where(
                 DocumentTemplate.id.in_(template_data.required_document_ids),
                 DocumentTemplate.company_id == company_id
             )
         )
-        db_template.required_documents.extend(required_docs.scalars().all())
+        valid_required_ids = required_docs.scalars().all()
+        
+        # Insert associations
+        for doc_id in valid_required_ids:
+            await db.execute(
+                insert(onboarding_template_required_documents).values(
+                    onboarding_template_id=db_template.id,
+                    document_template_id=doc_id
+                )
+            )
     
     # Associate optional documents
     if template_data.optional_document_ids:
+        # Verify document templates belong to the same company
         optional_docs = await db.execute(
-            select(DocumentTemplate).where(
+            select(DocumentTemplate.id).where(
                 DocumentTemplate.id.in_(template_data.optional_document_ids),
                 DocumentTemplate.company_id == company_id
             )
         )
-        db_template.optional_documents.extend(optional_docs.scalars().all())
+        valid_optional_ids = optional_docs.scalars().all()
+        
+        # Insert associations
+        for doc_id in valid_optional_ids:
+            await db.execute(
+                insert(onboarding_template_optional_documents).values(
+                    onboarding_template_id=db_template.id,
+                    document_template_id=doc_id
+                )
+            )
     
     await db.commit()
     await db.refresh(db_template)
@@ -156,26 +181,60 @@ async def update_onboarding_template(
     
     # Update document associations if provided
     if template_data.required_document_ids is not None:
-        db_template.required_documents.clear()
+        # Clear existing required document associations
+        await db.execute(
+            delete(onboarding_template_required_documents).where(
+                onboarding_template_required_documents.c.onboarding_template_id == db_template.id
+            )
+        )
+        
+        # Add new required document associations
         if template_data.required_document_ids:
+            # Verify document templates belong to the same company
             required_docs = await db.execute(
-                select(DocumentTemplate).where(
+                select(DocumentTemplate.id).where(
                     DocumentTemplate.id.in_(template_data.required_document_ids),
                     DocumentTemplate.company_id == company_id
                 )
             )
-            db_template.required_documents.extend(required_docs.scalars().all())
+            valid_required_ids = required_docs.scalars().all()
+            
+            # Insert new associations
+            for doc_id in valid_required_ids:
+                await db.execute(
+                    insert(onboarding_template_required_documents).values(
+                        onboarding_template_id=db_template.id,
+                        document_template_id=doc_id
+                    )
+                )
     
     if template_data.optional_document_ids is not None:
-        db_template.optional_documents.clear()
+        # Clear existing optional document associations
+        await db.execute(
+            delete(onboarding_template_optional_documents).where(
+                onboarding_template_optional_documents.c.onboarding_template_id == db_template.id
+            )
+        )
+        
+        # Add new optional document associations
         if template_data.optional_document_ids:
+            # Verify document templates belong to the same company
             optional_docs = await db.execute(
-                select(DocumentTemplate).where(
+                select(DocumentTemplate.id).where(
                     DocumentTemplate.id.in_(template_data.optional_document_ids),
                     DocumentTemplate.company_id == company_id
                 )
             )
-            db_template.optional_documents.extend(optional_docs.scalars().all())
+            valid_optional_ids = optional_docs.scalars().all()
+            
+            # Insert new associations
+            for doc_id in valid_optional_ids:
+                await db.execute(
+                    insert(onboarding_template_optional_documents).values(
+                        onboarding_template_id=db_template.id,
+                        document_template_id=doc_id
+                    )
+                )
     
     await db.commit()
     await db.refresh(db_template)
