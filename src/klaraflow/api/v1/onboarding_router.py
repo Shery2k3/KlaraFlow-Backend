@@ -14,6 +14,10 @@ from klaraflow.core.s3_service import s3_service
 import logging
 
 logger = logging.getLogger("klaraflow.onboarding")
+logging.basicConfig(
+    level=logging.INFO,  # Or DEBUG for more details
+    format="%(asctime)s %(levelname)s %(name)s %(message)s"
+)
 
 router = APIRouter()
 
@@ -24,7 +28,7 @@ router = APIRouter()
 async def invite_employee(
     # invite_data: onboarding_schema.OnboardingInviteRequest,
     request: Request,
-    avatar_file: Optional[UploadFile] = File(None),
+    profilePic: Optional[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db),
     current_admin: User = Depends(get_current_active_admin) 
 ):
@@ -58,10 +62,10 @@ async def invite_employee(
     #Over
     
     profile_picture_url = None
-    if avatar_file:
+    if profilePic:
         folder = f"profile_pictures/{current_admin.company_id}"
-        logger.info(f"Uploading file to S3: {avatar_file.filename} -> {folder}")
-        profile_picture_url = await s3_service.upload_file(avatar_file, folder)
+        logger.info(f"Uploading file to S3: {profilePic.filename} -> {folder}")
+        profile_picture_url = await s3_service.upload_file(profilePic, folder)
         logger.info(f"File uploaded. S3 URL: {profile_picture_url}")
     else:
         logger.info("No avatar_file provided in request.")
