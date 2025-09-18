@@ -17,8 +17,9 @@ class User(Base):
     # --- Basic Info ---
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    first_name = Column(String, nullable=True) # Will be filled during onboarding
+    first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
+    profile_picure_url = Column(String, nullable=True)
     
     # --- Status & Roles ---
     is_active = Column(Boolean, default=False) # Should be False until onboarding is complete

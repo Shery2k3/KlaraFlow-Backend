@@ -13,6 +13,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
 async def create_user_from_onboarding(db: AsyncSession, *, session: OnboardingSession, hashed_password: str) -> User:
     db_user = User(
         company_id=session.company_id,
+        profile_picure_url=session.profile_picture_url,
         email=session.new_employee_email,
         hashed_password=hashed_password,
         first_name=session.firstName,

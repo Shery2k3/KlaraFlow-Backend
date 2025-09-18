@@ -10,7 +10,7 @@ from klaraflow.crud import user_crud
 from klaraflow.base.responses import create_response
 from klaraflow.base.exceptions import APIException
 
-async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInviteRequest, company_id: int):
+async def invite_new_employee(db: AsyncSession,invite_data: OnboardingInviteRequest,company_id: int, profile_picture_url: str = None):
     #? Check for existing pending invites
     existing_session = select(OnboardingSession).where(
         OnboardingSession.new_employee_email == invite_data.email,
@@ -54,7 +54,8 @@ async def invite_new_employee(db: AsyncSession, *, invite_data: OnboardingInvite
         probationPeriod=invite_data.probationPeriod,
         dateOfBirth=invite_data.dateOfBirth,
         maritalStatus=invite_data.maritalStatus,
-        nationality=invite_data.nationality
+        nationality=invite_data.nationality,
+        profile_picture_url=profile_picture_url
     )
     db.add(db_session)
     await db.commit()
