@@ -18,7 +18,11 @@ class S3Service:
         file_name = f"{uuid.uuid4()}.{file_extension}"
         file_key = f"{folder}/{file_name}"
 
-        self.s3.upload_fileobj(file.file, self.bucket_name, file_key)
+        self.s3.upload_fileobj(file.file,
+                               self.bucket_name,
+                               file_key,
+                                ExtraArgs={"ContentType": file.content_type}
+        )
 
         return f"https://{self.bucket_name}.s3.{settings.AWS_REGION}.amazonaws.com/{file_key}"
 

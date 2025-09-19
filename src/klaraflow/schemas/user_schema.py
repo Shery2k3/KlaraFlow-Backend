@@ -15,12 +15,17 @@ class UserLogin(BaseModel):
 # Data shape for returning a user to public
 class UserPublic(BaseModel):
     id: int
-    email: EmailStr
+    email: str
+    first_name: str | None
+    last_name: str | None
     is_active: bool
     role: str
-    company: CompanyPublic
-    created_at: datetime
-    
+    empId: str | None
+    phone: str | None
+    gender: str | None
+    department: str | None = None
+    designation: str | None = None
+
     class Config:
         from_attributes = True
 

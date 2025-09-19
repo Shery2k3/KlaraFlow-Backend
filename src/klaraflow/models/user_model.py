@@ -27,9 +27,6 @@ class User(Base):
     
     # --- Timestamps ---
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # --- Relationships ---
-    company = relationship("Company", back_populates="users")
 
     # --- Employee Details (Can be in a separate Profile model later) ---
     phone = Column(String, nullable=True)
@@ -44,3 +41,11 @@ class User(Base):
     dateOfBirth = Column(String, nullable=True)
     nationality = Column(String, nullable=True)
     maritalStatus = Column(String, nullable=True)
+    
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
+    designation_id = Column(Integer, ForeignKey("designations.id"), nullable=True)
+    
+    # --- Relationships ---
+    company = relationship("Company", back_populates="users")
+    department = relationship("Department", back_populates="employees")
+    designation = relationship("Designation", back_populates="employees")
