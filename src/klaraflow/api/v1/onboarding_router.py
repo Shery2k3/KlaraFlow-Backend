@@ -26,6 +26,7 @@ router = APIRouter()
     response_model=onboarding_schema.OnboardingSessionRead
 )
 async def invite_employee(
+    # TODO: Fix the pydantic model parsing with multipart/form-data
     # invite_data: onboarding_schema.OnboardingInviteRequest,
     request: Request,
     profilePic: Optional[UploadFile] = File(None),

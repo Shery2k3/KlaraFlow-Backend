@@ -20,7 +20,7 @@ async def create_department(
 ):
     """Create a new department for the admin's company."""
     new_dept = await department_crud.create_department(
-        db=db, department_in=department_in, company_id=current_admin.company_id
+        db=db, department=department_in, company_id=current_admin.company_id
     )
     # Use model_validate (from_orm is deprecated in Pydantic v2)
     response_data = department_schema.DepartmentRead.model_validate(new_dept)
