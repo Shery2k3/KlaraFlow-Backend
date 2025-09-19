@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from klaraflow.crud import user_crud, onboarding_crud
 from klaraflow.schemas import user_schema, onboarding_schema
@@ -33,18 +33,6 @@ async def login(login_data: user_schema.UserLogin, db: AsyncSession = Depends(ge
     # Create response matching frontend expectations
     response_data = {
         "token": access_token,
-        "user": {
-            "id": str(user.id),
-            "email": user.email,
-            "firstName": user.first_name or "",
-            "lastName": user.last_name or "",
-            "role": user.role,
-            "department": user.department or "",
-            "designation": user.designation or "",
-            "status": "active" if user.is_active else "inactive",
-            "createdAt": user.created_at.isoformat() if user.created_at else "",
-            "updatedAt": user.created_at.isoformat() if user.created_at else ""  # Use created_at as fallback
-        },
         "expiresIn": 3600  # 1 hour in seconds
     }
     
@@ -56,7 +44,7 @@ async def login(login_data: user_schema.UserLogin, db: AsyncSession = Depends(ge
     
 @router.post("/activate", response_model=user_schema.Token)
 async def activate_account(
-    activation_data: onboarding_schema.OnboardingActivationRequest,
+    activation_data: onboarding_schema.OnboardingActivationRequest = Body(...),
     db: AsyncSession = Depends(get_db)
 ):
     token_data = await onboarding_crud.activate_employee_account(db, activation_data=activation_data)
