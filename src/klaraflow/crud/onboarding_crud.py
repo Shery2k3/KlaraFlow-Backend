@@ -13,6 +13,14 @@ from klaraflow.crud import user_crud
 from klaraflow.base.responses import create_response
 from klaraflow.base.exceptions import APIException
 
+import logging
+
+logger = logging.getLogger("klaraflow.onboarding")
+logging.basicConfig(
+    level=logging.INFO,  # Or DEBUG for more details
+    format="%(asctime)s %(levelname)s %(name)s %(message)s"
+)
+
 async def invite_new_employee(db: AsyncSession,invite_data: onboarding_schema.OnboardingInviteRequest,company_id: int, profile_picture_url: str = None):
     #? Check for existing pending invites
     existing_session = select(OnboardingSession).where(
@@ -135,27 +143,53 @@ async def get_onboarding_data_for_user(db: AsyncSession, user_email: str) -> onb
     
     from klaraflow.crud.onboarding_template_crud import get_onboarding_template_by_id
     template = await get_onboarding_template_by_id(db, template_id=session.template_id, company_id=session.company_id)
-
-    # Pre-fetch existing tasks and documents for this session
-    existing_tasks_result = await db.execute(select(OnboardingTask).where(OnboardingTask.session_id == session.id))
-    existing_tasks = {task.todo_item_id: task for task in existing_tasks_result.scalars().all()}
-
-    uploaded_docs_result = await db.execute(select(OnboardingDocument).where(OnboardingDocument.session_id == session.id))
-    uploaded_doc_ids = {doc.document_template_id for doc in uploaded_docs_result.scalars().all()}
     
-    # Create tasks for todos that don't have one yet
-    for todo_template in template.todos:
-        if todo_template.id not in existing_tasks:
-            new_task = OnboardingTask(
-                session_id=session.id,
-                todo_item_id=todo_template.id,
-                title=todo_template.title,
-                description=todo_template.description,
-                is_completed=False
-            )
-            db.add(new_task)
-            existing_tasks[todo_template.id] = new_task
-    await db.commit() # Commit new tasks
+    # log template
+    logger.info(f"Onboarding template for session {session.id}: {template}")
+    
+    todos = []
+    required_documents = []
+    optional_documents = []
+    
+    if template:
+        # Pre-fetch existing tasks and documents for this session
+        existing_tasks_result = await db.execute(select(OnboardingTask).where(OnboardingTask.session_id == session.id))
+        existing_tasks = {task.todo_item_id: task for task in existing_tasks_result.scalars().all()}
+
+        uploaded_docs_result = await db.execute(select(OnboardingDocument).where(OnboardingDocument.session_id == session.id))
+        uploaded_doc_ids = {doc.document_template_id for doc in uploaded_docs_result.scalars().all()}
+        
+        # Create tasks for todos that don't have one yet
+        for todo_template in template.todos:
+            if todo_template.id not in existing_tasks:
+                new_task = OnboardingTask(
+                    session_id=session.id,
+                    todo_item_id=todo_template.id,
+                    title=todo_template.title,
+                    description=todo_template.description,
+                    is_completed=False
+                )
+                db.add(new_task)
+                existing_tasks[todo_template.id] = new_task
+        await db.commit() # Commit new tasks
+        
+        todos = [
+            onboarding_schema.TodoItemRead.model_validate(
+                todo, 
+                update={"is_completed": existing_tasks.get(todo.id).is_completed if todo.id in existing_tasks else False}
+            ) 
+            for todo in template.todos
+        ]
+        
+        required_documents = [
+            onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
+            for doc in template.required_documents
+        ]
+        
+        optional_documents = [
+            onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
+            for doc in template.optional_documents
+        ]
     
     employee_data = {
         "id": session.id,
