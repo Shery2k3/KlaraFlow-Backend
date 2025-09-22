@@ -8,9 +8,11 @@ class OnboardingSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     profile_picture_url = Column(String, nullable=True) 
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
-    template_id = Column(Integer, ForeignKey("onboarding_templates.id"), nullable=True)  # Reference to onboarding template
+    template_id = Column(Integer, ForeignKey("onboarding_templates.id"), nullable=True)
+
     new_employee_email = Column(String, nullable=False, index=True)
     status = Column(String, default="pending")
+    current_step = Column(Integer, default=0)
     
     invitation_token = Column(String, nullable=False, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
@@ -35,3 +37,4 @@ class OnboardingSession(Base):
     
     tasks = relationship("OnboardingTask", back_populates="session")
     template = relationship("OnboardingTemplate", back_populates="sessions")
+    uploaded_documents = relationship("OnboardingDocument", back_populates="session")

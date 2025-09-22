@@ -3,14 +3,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
 from klaraflow.models.onboarding.session_model import OnboardingSession
-from klaraflow.schemas.onboarding_schema import OnboardingInviteRequest, OnboardingActivationRequest
+from klaraflow.models.onboarding.task_model import OnboardingTask
+from klaraflow.models.onboarding.document_model import OnboardingDocument
+from klaraflow.models.onboarding.todo_item_model import TodoItem
+from klaraflow.schemas import onboarding_schema
 from klaraflow.core.security import create_access_token, get_hash_password
 from klaraflow.core.email_service import send_onboarding_invitation
 from klaraflow.crud import user_crud
 from klaraflow.base.responses import create_response
 from klaraflow.base.exceptions import APIException
 
-async def invite_new_employee(db: AsyncSession,invite_data: OnboardingInviteRequest,company_id: int, profile_picture_url: str = None):
+async def invite_new_employee(db: AsyncSession,invite_data: onboarding_schema.OnboardingInviteRequest,company_id: int, profile_picture_url: str = None):
     #? Check for existing pending invites
     existing_session = select(OnboardingSession).where(
         OnboardingSession.new_employee_email == invite_data.email,
@@ -86,7 +89,7 @@ async def get_session_by_token(db: AsyncSession, token: str) -> OnboardingSessio
         
     return session
 
-async def activate_employee_account(db: AsyncSession, *, activation_data: OnboardingActivationRequest):
+async def activate_employee_account(db: AsyncSession, *, activation_data: onboarding_schema.OnboardingActivationRequest):
     # 1. Get and validate the session using our new function
     session = await get_session_by_token(db, token=activation_data.token)
     
@@ -100,11 +103,147 @@ async def activate_employee_account(db: AsyncSession, *, activation_data: Onboar
         hashed_password=hashed_password
     )
     
-    # 4. Mark the temporary onboarding session as 'completed'
-    session.status = "completed"
+    # 4. Mark the temporary onboarding session as 'in_progress'
+    session.status = "in_progress"
     await db.commit()
     
     # 5. Create a login token for the new user so they are immediately logged in
     login_token = create_access_token(data={"sub": new_user.email})
     
     return {"access_token": login_token, "token_type": "bearer"}
+
+async def update_onboarding_step(db: AsyncSession, token: str, step_data: onboarding_schema.OnboardingStepUpdateRequest) -> OnboardingSession:
+    session = await get_session_by_token(db, token=token)
+    session.current_step = step_data.current_step
+    await db.commit()
+    await db.refresh(session)
+    return session
+
+async def get_onboarding_session_for_user(db: AsyncSession, user_email: str) -> OnboardingSession:
+    statement = select(OnboardingSession).where(
+        OnboardingSession.new_employee_email == user_email,
+        OnboardingSession.status == "in_progress"
+    )
+    result = await db.execute(statement)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise APIException(status_code=status.HTTP_404_NOT_FOUND, message="No active onboarding session found", errors=["No onboarding session"])
+    return session
+
+async def get_onboarding_data_for_user(db: AsyncSession, user_email: str) -> onboarding_schema.OnboardingDataRead:
+    session = await get_onboarding_session_for_user(db, user_email)
+    
+    from klaraflow.crud.onboarding_template_crud import get_onboarding_template_by_id
+    template = await get_onboarding_template_by_id(db, template_id=session.template_id, company_id=session.company_id)
+
+    # Pre-fetch existing tasks and documents for this session
+    existing_tasks_result = await db.execute(select(OnboardingTask).where(OnboardingTask.session_id == session.id))
+    existing_tasks = {task.todo_item_id: task for task in existing_tasks_result.scalars().all()}
+
+    uploaded_docs_result = await db.execute(select(OnboardingDocument).where(OnboardingDocument.session_id == session.id))
+    uploaded_doc_ids = {doc.document_template_id for doc in uploaded_docs_result.scalars().all()}
+    
+    # Create tasks for todos that don't have one yet
+    for todo_template in template.todos:
+        if todo_template.id not in existing_tasks:
+            new_task = OnboardingTask(
+                session_id=session.id,
+                todo_item_id=todo_template.id,
+                title=todo_template.title,
+                description=todo_template.description,
+                is_completed=False
+            )
+            db.add(new_task)
+            existing_tasks[todo_template.id] = new_task
+    await db.commit() # Commit new tasks
+    
+    employee_data = {
+        "id": session.id,
+        "empId": session.empId,
+        "firstName": session.firstName,
+        "lastName": session.lastName,
+        "email": session.new_employee_email,
+        "phone": session.phone,
+        "gender": session.gender,
+        "userRole": session.userRole,
+        "designation": session.designation,
+        "department": session.department,
+        "jobType": session.jobType,
+        "hiringDate": session.hiringDate,
+        "reportTo": session.reportTo,
+        "grade": session.grade,
+        "probationPeriod": session.probationPeriod,
+        "dateOfBirth": session.dateOfBirth,
+        "maritalStatus": session.maritalStatus,
+        "nationality": session.nationality,
+        "profilePic": session.profile_picture_url,
+        "status": session.status,
+    }
+    
+    todos = [
+        onboarding_schema.TodoItemRead.model_validate(
+            todo, 
+            update={"is_completed": existing_tasks.get(todo.id).is_completed if todo.id in existing_tasks else False}
+        ) 
+        for todo in template.todos
+    ]
+    
+    required_documents = [
+        onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
+        for doc in template.required_documents
+    ]
+    
+    optional_documents = [
+        onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
+        for doc in template.optional_documents
+    ]
+    
+    return onboarding_schema.OnboardingDataRead(
+        id=session.id,
+        employee_data=employee_data,
+        todos=todos,
+        required_documents=required_documents,
+        optional_documents=optional_documents,
+        current_step=session.current_step
+    )
+
+async def update_todo_for_user(db: AsyncSession, user_email: str, todo_id: int, completed: bool):
+    session = await get_onboarding_session_for_user(db, user_email)
+    
+    statement = select(OnboardingTask).where(
+        OnboardingTask.session_id == session.id,
+        OnboardingTask.todo_item_id == todo_id
+    )
+    result = await db.execute(statement)
+    task_to_update = result.scalar_one_or_none()
+
+    if not task_to_update:
+        raise APIException(status_code=status.HTTP_404_NOT_FOUND, message="Todo item not found for this session")
+
+    task_to_update.is_completed = completed
+    await db.commit()
+    return {"message": "Todo updated successfully"}
+
+async def save_uploaded_document(db: AsyncSession, user_email: str, document_template_id: int, file_url: str):
+    session = await get_onboarding_session_for_user(db, user_email)
+    
+    new_document = OnboardingDocument(
+        session_id=session.id,
+        document_template_id=document_template_id,
+        file_url=file_url
+    )
+    db.add(new_document)
+    await db.commit()
+    await db.refresh(new_document)
+    return new_document
+
+async def submit_onboarding(db: AsyncSession, user_email: str):
+    session = await get_onboarding_session_for_user(db, user_email)
+    session.status = "completed"
+    
+    # Update user status to active
+    from klaraflow.crud import user_crud
+    user = await user_crud.get_user_by_email(db, email=user_email)
+    user.is_active = True
+    
+    await db.commit()

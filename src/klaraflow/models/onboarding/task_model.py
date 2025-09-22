@@ -7,11 +7,13 @@ class OnboardingTask(Base):
 
     id = Column(Integer, primary_key=True)
     session_id = Column(Integer, ForeignKey("onboarding_sessions.id"), nullable=False)
-    # todo_item_id will be added when we implement the full session functionality
-    
+
+    todo_item_id = Column(Integer, ForeignKey("todo_items.id"), nullable=False)
+        
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
     is_completed = Column(Boolean, default=False, nullable=False)
 
     session = relationship("OnboardingSession", back_populates="tasks")
-    # Relationship to TodoItem will be added when session functionality is implemented
+    
+    todo_item = relationship("TodoItem")

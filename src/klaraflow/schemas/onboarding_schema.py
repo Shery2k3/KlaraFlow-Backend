@@ -34,6 +34,7 @@ class OnboardingSessionRead(BaseModel):
     status: str
     created_at: datetime
     expires_at: datetime
+    current_step: int
 
     class Config:
         from_attributes = True
@@ -56,6 +57,8 @@ class OnboardingSessionDataResponse(BaseModel):
     dateOfBirth: str | None
     maritalStatus: str | None
     nationality: str | None
+    status: str
+    current_step: int
 
     class Config:
         from_attributes = True
@@ -63,6 +66,13 @@ class OnboardingSessionDataResponse(BaseModel):
 class OnboardingActivationRequest(BaseModel):
     token: str
     password: str
+
+class OnboardingStatusResponse(BaseModel):
+    status: str
+    current_step: int
+
+class OnboardingStepUpdateRequest(BaseModel):
+    current_step: int
 
 # Todo Item Schemas
 class TodoItemBase(BaseModel):
