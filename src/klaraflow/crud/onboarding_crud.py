@@ -180,25 +180,72 @@ async def get_onboarding_data_for_user(db: AsyncSession, user_email: str) -> onb
             await db.commit()  # Commit new tasks
             logger.info(f"Committed new tasks for session {session.id}")
             
-            todos = [
-                onboarding_schema.TodoItemRead.model_validate(
-                    todo, 
-                    update={"is_completed": existing_tasks.get(todo.id).is_completed if todo.id in existing_tasks else False}
-                ) 
-                for todo in template.todos
-            ]
+            # Build todo representations and attach completion status returned as plain dicts
+            todos = []
+            for todo in template.todos:
+                todo_model = onboarding_schema.TodoItemRead.model_validate(todo)
+                todo_dict = todo_model.model_dump()
+                todo_dict["is_completed"] = existing_tasks.get(todo.id).is_completed if todo.id in existing_tasks else False
+                todos.append(todo_dict)
             logger.debug(f"Processed {len(todos)} todos for session {session.id}")
             
-            required_documents = [
-                onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
-                for doc in template.required_documents
-            ]
+            # Build document representations and set 'uploaded' flag on plain dicts
+            # Convert DocumentTemplate and nested DocumentField ORM objects into serializable dicts
+            required_documents = []
+            for doc in template.required_documents:
+                # Convert fields into simple dicts
+                fields_list = []
+                for f in getattr(doc, "fields", []) or []:
+                    fields_list.append({
+                        "id": getattr(f, "id", None),
+                        "label": getattr(f, "label", None),
+                        "field_type": getattr(f.field_type, "value", f.field_type) if f is not None else None,
+                        "placeholder": getattr(f, "placeholder", None),
+                        "description": getattr(f, "description", None),
+                        "required": getattr(f, "required", False),
+                        "width": getattr(f.width, "value", f.width) if f is not None else None,
+                        "order_index": getattr(f, "order_index", None),
+                        "created_at": getattr(f, "created_at", None),
+                    })
+
+                doc_dict = {
+                    "id": getattr(doc, "id", None),
+                    "name": getattr(doc, "name", None),
+                    "fields": fields_list,
+                    "required": True,
+                    "uploaded": doc.id in uploaded_doc_ids,
+                    "created_at": getattr(doc, "created_at", None),
+                    "updated_at": getattr(doc, "updated_at", None),
+                }
+                required_documents.append(doc_dict)
             logger.debug(f"Processed {len(required_documents)} required documents for session {session.id}")
-            
-            optional_documents = [
-                onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
-                for doc in template.optional_documents
-            ]
+
+            optional_documents = []
+            for doc in template.optional_documents:
+                fields_list = []
+                for f in getattr(doc, "fields", []) or []:
+                    fields_list.append({
+                        "id": getattr(f, "id", None),
+                        "label": getattr(f, "label", None),
+                        "field_type": getattr(f.field_type, "value", f.field_type) if f is not None else None,
+                        "placeholder": getattr(f, "placeholder", None),
+                        "description": getattr(f, "description", None),
+                        "required": getattr(f, "required", False),
+                        "width": getattr(f.width, "value", f.width) if f is not None else None,
+                        "order_index": getattr(f, "order_index", None),
+                        "created_at": getattr(f, "created_at", None),
+                    })
+
+                doc_dict = {
+                    "id": getattr(doc, "id", None),
+                    "name": getattr(doc, "name", None),
+                    "fields": fields_list,
+                    "required": False,
+                    "uploaded": doc.id in uploaded_doc_ids,
+                    "created_at": getattr(doc, "created_at", None),
+                    "updated_at": getattr(doc, "updated_at", None),
+                }
+                optional_documents.append(doc_dict)
             logger.debug(f"Processed {len(optional_documents)} optional documents for session {session.id}")
         else:
             logger.warning(f"No template found for session {session.id} (template_id={session.template_id}, company_id={session.company_id})")

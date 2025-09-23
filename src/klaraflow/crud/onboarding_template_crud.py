@@ -134,8 +134,10 @@ async def get_onboarding_template_by_id(
         select(OnboardingTemplate)
         .options(
             selectinload(OnboardingTemplate.todos), 
-            selectinload(OnboardingTemplate.required_documents),
-            selectinload(OnboardingTemplate.optional_documents)
+            # Eagerly load related DocumentTemplate.fields so reading attributes
+            # during Pydantic model validation doesn't trigger async lazy loads
+            selectinload(OnboardingTemplate.required_documents).selectinload(DocumentTemplate.fields),
+            selectinload(OnboardingTemplate.optional_documents).selectinload(DocumentTemplate.fields)
         )
         .where(
             OnboardingTemplate.id == template_id,
