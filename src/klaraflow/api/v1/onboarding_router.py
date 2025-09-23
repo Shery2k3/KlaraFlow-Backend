@@ -205,6 +205,46 @@ async def update_my_onboarding_data(
         status_code=status.HTTP_200_OK
     )
 
+
+@router.put("/review", response_model=onboarding_schema.OnboardingDataRead)
+async def review_and_update_my_info(
+    request: Request,
+    profilePic: Optional[UploadFile] = File(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Endpoint for the user to review their pre-filled information (provided by HR) and edit
+    allowed fields. Accepts multipart/form-data so profile picture can be uploaded.
+    """
+    form = await request.form()
+
+    # Collect allowed fields from the multipart form
+    update_data = {
+        "firstName": form.get("firstName"),
+        "lastName": form.get("lastName"),
+        "email": form.get("email"),
+        "phone": form.get("phone"),
+        "gender": form.get("gender"),
+        "dateOfBirth": form.get("dateOfBirth"),
+        "maritalStatus": form.get("maritalStatus"),
+        "nationality": form.get("nationality"),
+    }
+
+    # Call CRUD to update the session and optionally upload profile picture
+    updated_data = await onboarding_crud.update_onboarding_review_for_user(
+        db=db,
+        user_email=current_user.email,
+        update_data=update_data,
+        profile_file=profilePic
+    )
+
+    return create_response(
+        data=updated_data,
+        message="Onboarding info updated successfully",
+        status_code=status.HTTP_200_OK
+    )
+
 @router.post("/documents/upload")
 async def upload_onboarding_document(
     document_template_id: int = Form(...),

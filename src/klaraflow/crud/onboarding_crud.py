@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 from klaraflow.models.onboarding.session_model import OnboardingSession
 from klaraflow.models.onboarding.task_model import OnboardingTask
 from klaraflow.models.onboarding.document_model import OnboardingDocument
@@ -11,6 +11,7 @@ from klaraflow.core.security import create_access_token, get_hash_password
 from klaraflow.core.email_service import send_onboarding_invitation
 from klaraflow.crud import user_crud
 from klaraflow.base.responses import create_response
+from klaraflow.core.s3_service import s3_service
 from klaraflow.base.exceptions import APIException
 
 import logging
@@ -202,38 +203,23 @@ async def get_onboarding_data_for_user(db: AsyncSession, user_email: str) -> onb
         else:
             logger.warning(f"No template found for session {session.id} (template_id={session.template_id}, company_id={session.company_id})")
         
-        employee_data = {
-            "id": session.id,
-            "empId": session.empId,
-            "firstName": session.firstName,
-            "lastName": session.lastName,
-            "email": session.new_employee_email,
-            "phone": session.phone,
-            "gender": session.gender,
-            "userRole": session.userRole,
-            "designation": session.designation,
-            "department": session.department,
-            "jobType": session.jobType,
-            "hiringDate": session.hiringDate,
-            "reportTo": session.reportTo,
-            "grade": session.grade,
-            "probationPeriod": session.probationPeriod,
-            "dateOfBirth": session.dateOfBirth,
-            "maritalStatus": session.maritalStatus,
-            "nationality": session.nationality,
-            "profilePic": session.profile_picture_url,
-            "status": session.status,
-        }
         logger.debug(f"Employee data prepared for session {session.id}")
-        
+
         logger.info(f"Returning onboarding data for session {session.id}")
+        # Return a simplified view matching OnboardingDataRead
         return onboarding_schema.OnboardingDataRead(
-            id=session.id,
-            employee_data=employee_data,
-            todos=todos,
-            required_documents=required_documents,
-            optional_documents=optional_documents,
-            current_step=session.current_step
+            new_employee_email=session.new_employee_email,
+            firstName=session.firstName,
+            lastName=session.lastName,
+            empId=session.empId,
+            phone=session.phone,
+            gender=session.gender,
+            dateOfBirth=session.dateOfBirth,
+            maritalStatus=session.maritalStatus,
+            nationality=session.nationality,
+            profile_picture_url=session.profile_picture_url,
+            status=session.status,
+            current_step=session.current_step,
         )
     except Exception as e:
         logger.error(f"Error in get_onboarding_data_for_user for user {user_email}: {str(e)}", exc_info=True)
@@ -279,3 +265,51 @@ async def submit_onboarding(db: AsyncSession, user_email: str):
     user.is_active = True
     
     await db.commit()
+
+
+async def update_onboarding_review_for_user(
+    db: AsyncSession,
+    user_email: str,
+    update_data: dict,
+    profile_file: UploadFile | None = None
+):
+    """Update the onboarding session fields that the user is allowed to change
+    and optionally upload a new profile picture to S3.
+    """
+    session = await get_onboarding_session_for_user(db, user_email)
+
+    # Allowed fields to be updated by the user
+    allowed = {
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "gender",
+        "dateOfBirth",
+        "maritalStatus",
+        "nationality",
+    }
+
+    for key, value in update_data.items():
+        if key in allowed and value is not None:
+            # Map email -> new_employee_email on the session
+            if key == "email":
+                session.new_employee_email = value
+            else:
+                setattr(session, key, value)
+
+    # Handle profile picture upload if provided
+    if profile_file is not None:
+        try:
+            file_url = await s3_service.upload_file(profile_file, folder=f"onboarding/{session.id}/profile")
+            session.profile_picture_url = file_url
+        except Exception as e:
+            logger.error(f"Failed to upload profile picture for session {session.id}: {e}")
+            raise APIException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Failed to upload profile picture", errors=[str(e)])
+
+    # If email was updated, also update the session email field
+    await db.commit()
+    await db.refresh(session)
+
+    # Return updated onboarding data view
+    return await get_onboarding_data_for_user(db, user_email=session.new_employee_email)

@@ -36,6 +36,21 @@ class OnboardingSessionRead(BaseModel):
     created_at: datetime
     expires_at: datetime
     current_step: int
+    
+    
+# Request model used when the invited user reviews and edits their information
+class OnboardingReviewUpdateRequest(BaseModel):
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    gender: Optional[str] = None
+    dateOfBirth: Optional[str] = None
+    maritalStatus: Optional[str] = None
+    nationality: Optional[str] = None
+    # profile_picture will be uploaded via multipart/form-data as a file;
+    # the router/CRUD will return the resulting URL in the response.
+
 
     class Config:
         from_attributes = True
@@ -138,12 +153,19 @@ class OnboardingDocumentRead(BaseModel):
         from_attributes = True
 
 class OnboardingDataRead(BaseModel):
-    id: Optional[int] = None
-    employee_data: dict  # Employee information
-    todos: List[TodoItemRead] = []
-    required_documents: List[OnboardingDocumentRead] = []
-    optional_documents: List[OnboardingDocumentRead] = []
-    current_step: int = 0
+    # Minimal onboarding data returned to the user when fetching their onboarding info
+    new_employee_email: EmailStr
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+    empId: Optional[str] = None
+    phone: Optional[str] = None
+    gender: Optional[str] = None
+    dateOfBirth: Optional[str] = None
+    maritalStatus: Optional[str] = None
+    nationality: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+    status: str
+    current_step: int
 
     class Config:
         from_attributes = True
