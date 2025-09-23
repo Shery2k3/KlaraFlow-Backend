@@ -66,7 +66,8 @@ async def invite_new_employee(db: AsyncSession,invite_data: onboarding_schema.On
         dateOfBirth=invite_data.dateOfBirth,
         maritalStatus=invite_data.maritalStatus,
         nationality=invite_data.nationality,
-        profile_picture_url=profile_picture_url
+        profile_picture_url=profile_picture_url,
+        template_id=invite_data.onboardingTemplateId
     )
     db.add(db_session)
     await db.commit()

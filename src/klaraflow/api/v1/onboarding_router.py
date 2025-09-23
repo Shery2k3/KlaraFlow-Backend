@@ -59,6 +59,7 @@ async def invite_employee(
         dateOfBirth=form.get("dateOfBirth"),
         maritalStatus=form.get("maritalStatus"),
         nationality=form.get("nationality"),
+        onboardingTemplateId=form.get("onboardingTemplateId")
     )
     #Over
     
@@ -138,12 +139,11 @@ async def get_my_onboarding_data(
 
 @router.put("/step", response_model=onboarding_schema.OnboardingDataRead)
 async def update_my_onboarding_step(
-    step_data: onboarding_schema.OnboardingStepUpdateRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     session = await onboarding_crud.get_onboarding_session_for_user(db, user_email=current_user.email)
-    session.current_step = step_data.current_step
+    session.current_step += 1
     await db.commit()
     await db.refresh(session)
     

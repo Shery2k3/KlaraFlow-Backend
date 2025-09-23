@@ -26,6 +26,7 @@ class OnboardingInviteRequest(BaseModel):
     dateOfBirth: str | None = None
     maritalStatus: str | None = None
     nationality: str | None = None
+    onboardingTemplateId: int | None = None
 
 class OnboardingSessionRead(BaseModel):
     id: int
