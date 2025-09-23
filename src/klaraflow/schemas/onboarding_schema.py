@@ -166,6 +166,9 @@ class OnboardingDataRead(BaseModel):
     profilePic: Optional[str] = None
     status: str
     current_step: int
+    todos: List[TodoItemRead] = []
+    required_documents: List[OnboardingDocumentRead] = []
+    optional_documents: List[OnboardingDocumentRead] = []
 
     class Config:
         from_attributes = True

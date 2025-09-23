@@ -5,7 +5,7 @@ from typing import Optional
 from klaraflow.crud import onboarding_crud
 from klaraflow.schemas import onboarding_schema
 from klaraflow.config.database import get_db
-from klaraflow.dependencies.auth import get_current_active_admin, get_current_active_user
+from klaraflow.dependencies.auth import get_current_active_admin, get_current_active_user, get_current_user
 from klaraflow.models.user_model import User
 from klaraflow.schemas.user_schema import Token
 from klaraflow.base.responses import create_response
@@ -253,7 +253,7 @@ async def upload_onboarding_document(
     document_template_id: int = Form(...),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ):
     session = await onboarding_crud.get_onboarding_session_for_user(db, user_email=current_user.email)
     

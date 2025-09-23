@@ -267,6 +267,9 @@ async def get_onboarding_data_for_user(db: AsyncSession, user_email: str) -> onb
             profilePic=session.profile_picture_url,
             status=session.status,
             current_step=session.current_step,
+            todos=todos,
+            required_documents=required_documents,
+            optional_documents=optional_documents,
         )
     except Exception as e:
         logger.error(f"Error in get_onboarding_data_for_user for user {user_email}: {str(e)}", exc_info=True)

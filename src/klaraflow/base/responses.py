@@ -1,6 +1,7 @@
 from typing import TypeVar, Generic, Optional, List, Dict, Any
 from fastapi import status
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
 T = TypeVar('T')
@@ -27,7 +28,10 @@ def create_response(
     A utility function to create a standardized JSON success response.
     This allows us to set custom status codes while maintaining a consistent response body.
     """
+    # model_dump may include non-JSON-native types (e.g. datetime). Use jsonable_encoder
+    # to convert those into JSON-serializable forms (ISO strings for datetimes).
     content = SuccessResponse(data=data, message=message).model_dump(exclude_none=True)
+    content = jsonable_encoder(content)
     return JSONResponse(
         status_code=status_code,
         content=content
