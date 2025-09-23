@@ -139,107 +139,104 @@ async def get_onboarding_session_for_user(db: AsyncSession, user_email: str) -> 
     return session
 
 async def get_onboarding_data_for_user(db: AsyncSession, user_email: str) -> onboarding_schema.OnboardingDataRead:
-    session = await get_onboarding_session_for_user(db, user_email)
-    
-    from klaraflow.crud.onboarding_template_crud import get_onboarding_template_by_id
-    template = await get_onboarding_template_by_id(db, template_id=session.template_id, company_id=session.company_id)
-    
-    # log template
-    logger.info(f"Onboarding template for session {session.id}: {template}")
-    
-    todos = []
-    required_documents = []
-    optional_documents = []
-    
-    if template:
-        # Pre-fetch existing tasks and documents for this session
-        existing_tasks_result = await db.execute(select(OnboardingTask).where(OnboardingTask.session_id == session.id))
-        existing_tasks = {task.todo_item_id: task for task in existing_tasks_result.scalars().all()}
+    try:
+        session = await get_onboarding_session_for_user(db, user_email)
+        logger.info(f"Retrieved onboarding session for user {user_email}: {session.id}")
+        
+        from klaraflow.crud.onboarding_template_crud import get_onboarding_template_by_id
+        template = await get_onboarding_template_by_id(db, template_id=session.template_id, company_id=session.company_id)
+        logger.info(f"Onboarding template for session {session.id}: {template}")
+        
+        todos = []
+        required_documents = []
+        optional_documents = []
+        
+        if template:
+            logger.info(f"Template found, processing todos and documents for session {session.id}")
+            # Pre-fetch existing tasks and documents for this session
+            existing_tasks_result = await db.execute(select(OnboardingTask).where(OnboardingTask.session_id == session.id))
+            existing_tasks = {task.todo_item_id: task for task in existing_tasks_result.scalars().all()}
+            logger.debug(f"Existing tasks for session {session.id}: {list(existing_tasks.keys())}")
 
-        uploaded_docs_result = await db.execute(select(OnboardingDocument).where(OnboardingDocument.session_id == session.id))
-        uploaded_doc_ids = {doc.document_template_id for doc in uploaded_docs_result.scalars().all()}
+            uploaded_docs_result = await db.execute(select(OnboardingDocument).where(OnboardingDocument.session_id == session.id))
+            uploaded_doc_ids = {doc.document_template_id for doc in uploaded_docs_result.scalars().all()}
+            logger.debug(f"Uploaded doc IDs for session {session.id}: {uploaded_doc_ids}")
+            
+            # Create tasks for todos that don't have one yet
+            for todo_template in template.todos:
+                if todo_template.id not in existing_tasks:
+                    new_task = OnboardingTask(
+                        session_id=session.id,
+                        todo_item_id=todo_template.id,
+                        title=todo_template.title,
+                        description=todo_template.description,
+                        is_completed=False
+                    )
+                    db.add(new_task)
+                    existing_tasks[todo_template.id] = new_task
+                    logger.info(f"Created new task for todo {todo_template.id} in session {session.id}")
+            await db.commit()  # Commit new tasks
+            logger.info(f"Committed new tasks for session {session.id}")
+            
+            todos = [
+                onboarding_schema.TodoItemRead.model_validate(
+                    todo, 
+                    update={"is_completed": existing_tasks.get(todo.id).is_completed if todo.id in existing_tasks else False}
+                ) 
+                for todo in template.todos
+            ]
+            logger.debug(f"Processed {len(todos)} todos for session {session.id}")
+            
+            required_documents = [
+                onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
+                for doc in template.required_documents
+            ]
+            logger.debug(f"Processed {len(required_documents)} required documents for session {session.id}")
+            
+            optional_documents = [
+                onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
+                for doc in template.optional_documents
+            ]
+            logger.debug(f"Processed {len(optional_documents)} optional documents for session {session.id}")
+        else:
+            logger.warning(f"No template found for session {session.id} (template_id={session.template_id}, company_id={session.company_id})")
         
-        # Create tasks for todos that don't have one yet
-        for todo_template in template.todos:
-            if todo_template.id not in existing_tasks:
-                new_task = OnboardingTask(
-                    session_id=session.id,
-                    todo_item_id=todo_template.id,
-                    title=todo_template.title,
-                    description=todo_template.description,
-                    is_completed=False
-                )
-                db.add(new_task)
-                existing_tasks[todo_template.id] = new_task
-        await db.commit() # Commit new tasks
+        employee_data = {
+            "id": session.id,
+            "empId": session.empId,
+            "firstName": session.firstName,
+            "lastName": session.lastName,
+            "email": session.new_employee_email,
+            "phone": session.phone,
+            "gender": session.gender,
+            "userRole": session.userRole,
+            "designation": session.designation,
+            "department": session.department,
+            "jobType": session.jobType,
+            "hiringDate": session.hiringDate,
+            "reportTo": session.reportTo,
+            "grade": session.grade,
+            "probationPeriod": session.probationPeriod,
+            "dateOfBirth": session.dateOfBirth,
+            "maritalStatus": session.maritalStatus,
+            "nationality": session.nationality,
+            "profilePic": session.profile_picture_url,
+            "status": session.status,
+        }
+        logger.debug(f"Employee data prepared for session {session.id}")
         
-        todos = [
-            onboarding_schema.TodoItemRead.model_validate(
-                todo, 
-                update={"is_completed": existing_tasks.get(todo.id).is_completed if todo.id in existing_tasks else False}
-            ) 
-            for todo in template.todos
-        ]
-        
-        required_documents = [
-            onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
-            for doc in template.required_documents
-        ]
-        
-        optional_documents = [
-            onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
-            for doc in template.optional_documents
-        ]
-    
-    employee_data = {
-        "id": session.id,
-        "empId": session.empId,
-        "firstName": session.firstName,
-        "lastName": session.lastName,
-        "email": session.new_employee_email,
-        "phone": session.phone,
-        "gender": session.gender,
-        "userRole": session.userRole,
-        "designation": session.designation,
-        "department": session.department,
-        "jobType": session.jobType,
-        "hiringDate": session.hiringDate,
-        "reportTo": session.reportTo,
-        "grade": session.grade,
-        "probationPeriod": session.probationPeriod,
-        "dateOfBirth": session.dateOfBirth,
-        "maritalStatus": session.maritalStatus,
-        "nationality": session.nationality,
-        "profilePic": session.profile_picture_url,
-        "status": session.status,
-    }
-    
-    todos = [
-        onboarding_schema.TodoItemRead.model_validate(
-            todo, 
-            update={"is_completed": existing_tasks.get(todo.id).is_completed if todo.id in existing_tasks else False}
-        ) 
-        for todo in template.todos
-    ]
-    
-    required_documents = [
-        onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
-        for doc in template.required_documents
-    ]
-    
-    optional_documents = [
-        onboarding_schema.OnboardingDocumentRead.model_validate(doc, update={"uploaded": doc.id in uploaded_doc_ids})
-        for doc in template.optional_documents
-    ]
-    
-    return onboarding_schema.OnboardingDataRead(
-        id=session.id,
-        employee_data=employee_data,
-        todos=todos,
-        required_documents=required_documents,
-        optional_documents=optional_documents,
-        current_step=session.current_step
-    )
+        logger.info(f"Returning onboarding data for session {session.id}")
+        return onboarding_schema.OnboardingDataRead(
+            id=session.id,
+            employee_data=employee_data,
+            todos=todos,
+            required_documents=required_documents,
+            optional_documents=optional_documents,
+            current_step=session.current_step
+        )
+    except Exception as e:
+        logger.error(f"Error in get_onboarding_data_for_user for user {user_email}: {str(e)}", exc_info=True)
+        raise
 
 async def update_todo_for_user(db: AsyncSession, user_email: str, todo_id: int, completed: bool):
     session = await get_onboarding_session_for_user(db, user_email)

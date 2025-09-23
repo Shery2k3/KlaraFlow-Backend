@@ -5,6 +5,9 @@ from klaraflow.config.settings import settings
 from klaraflow.core.security import get_hash_password
 from klaraflow.models import Base, Company, User
 
+#? --- Run ---
+# poetry run python -m scripts.seeder
+
 # --- Configuration ---
 # This is the data for your first company and its admin
 COMPANY_NAME = "KlaraFlow"

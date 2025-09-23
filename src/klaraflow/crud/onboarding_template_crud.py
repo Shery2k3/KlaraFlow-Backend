@@ -17,6 +17,8 @@ from klaraflow.schemas.onboarding_schema import (
     OnboardingTemplateUpdate,
     TodoItemCreate
 )
+from sqlalchemy.orm import selectinload
+from klaraflow.models.onboarding.onboarding_template_model import OnboardingTemplate
 from klaraflow.base.exceptions import APIException
 
 async def create_onboarding_template(
@@ -131,9 +133,9 @@ async def get_onboarding_template_by_id(
     result = await db.execute(
         select(OnboardingTemplate)
         .options(
-            selectinload(OnboardingTemplate.todos),
-            selectinload(OnboardingTemplate.required_documents).selectinload(DocumentTemplate.fields),
-            selectinload(OnboardingTemplate.optional_documents).selectinload(DocumentTemplate.fields)
+            selectinload(OnboardingTemplate.todos), 
+            selectinload(OnboardingTemplate.required_documents),
+            selectinload(OnboardingTemplate.optional_documents)
         )
         .where(
             OnboardingTemplate.id == template_id,
