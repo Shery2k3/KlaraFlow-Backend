@@ -264,7 +264,7 @@ async def get_onboarding_data_for_user(db: AsyncSession, user_email: str) -> onb
             dateOfBirth=session.dateOfBirth,
             maritalStatus=session.maritalStatus,
             nationality=session.nationality,
-            profile_picture_url=session.profile_picture_url,
+            profilePic=session.profile_picture_url,
             status=session.status,
             current_step=session.current_step,
         )
@@ -360,3 +360,8 @@ async def update_onboarding_review_for_user(
 
     # Return updated onboarding data view
     return await get_onboarding_data_for_user(db, user_email=session.new_employee_email)
+
+async def increment_step_for_user(db: AsyncSession, user_email: str):
+    session = await get_onboarding_session_for_user(db, user_email)
+    session.current_step += 1
+    await db.commit()

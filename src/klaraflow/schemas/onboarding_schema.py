@@ -163,7 +163,7 @@ class OnboardingDataRead(BaseModel):
     dateOfBirth: Optional[str] = None
     maritalStatus: Optional[str] = None
     nationality: Optional[str] = None
-    profile_picture_url: Optional[str] = None
+    profilePic: Optional[str] = None
     status: str
     current_step: int
 

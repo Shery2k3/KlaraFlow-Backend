@@ -238,6 +238,9 @@ async def review_and_update_my_info(
         update_data=update_data,
         profile_file=profilePic
     )
+    
+    # Increment to step 2 (Document Upload) after review
+    await onboarding_crud.increment_step_for_user(db, user_email=current_user.email)
 
     return create_response(
         data=updated_data,
