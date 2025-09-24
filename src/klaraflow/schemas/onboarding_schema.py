@@ -108,6 +108,7 @@ class TodoItemRead(TodoItemBase):
     id: int
     template_id: int
     created_at: datetime
+    is_completed: bool = False
 
     class Config:
         from_attributes = True
