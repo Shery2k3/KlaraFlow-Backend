@@ -1,18 +1,20 @@
 from datetime import datetime, timedelta, timezone
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from fastapi import HTTPException, status, UploadFile
+from fastapi import status, UploadFile
+from klaraflow.models.documents.document_submission_model import DocumentSubmission
 from klaraflow.models.onboarding.session_model import OnboardingSession
 from klaraflow.models.onboarding.task_model import OnboardingTask
 from klaraflow.models.onboarding.document_model import OnboardingDocument
-from klaraflow.models.onboarding.todo_item_model import TodoItem
+from klaraflow.models.documents.document_submission_model import DocumentSubmission 
 from klaraflow.schemas import onboarding_schema
 from klaraflow.core.security import create_access_token, get_hash_password
 from klaraflow.core.email_service import send_onboarding_invitation
-from klaraflow.crud import user_crud
-from klaraflow.base.responses import create_response
+from klaraflow.crud import document_template_crud, user_crud
 from klaraflow.core.s3_service import s3_service
 from klaraflow.base.exceptions import APIException
+import json
 
 import logging
 
@@ -160,9 +162,11 @@ async def get_onboarding_data_for_user(db: AsyncSession, user_email: str) -> onb
             existing_tasks = {task.todo_item_id: task for task in existing_tasks_result.scalars().all()}
             logger.debug(f"Existing tasks for session {session.id}: {list(existing_tasks.keys())}")
 
-            uploaded_docs_result = await db.execute(select(OnboardingDocument).where(OnboardingDocument.session_id == session.id))
-            uploaded_doc_ids = {doc.document_template_id for doc in uploaded_docs_result.scalars().all()}
-            logger.debug(f"Uploaded doc IDs for session {session.id}: {uploaded_doc_ids}")
+            uploaded_docs_result = await db.execute(
+                select(DocumentSubmission).where(DocumentSubmission.employee_id == session.empId)
+            )
+            uploaded_doc_ids = {doc.template_id for doc in uploaded_docs_result.scalars().all()}
+            logger.debug(f"Uploaded doc IDs for session {session.id} from submissions: {uploaded_doc_ids}")
             
             # Create tasks for todos that don't have one yet
             for todo_template in template.todos:
@@ -368,3 +372,52 @@ async def increment_step_for_user(db: AsyncSession, user_email: str):
     session = await get_onboarding_session_for_user(db, user_email)
     session.current_step += 1
     await db.commit()
+    
+async def submit_onboarding_document(
+    db: AsyncSession,
+    *,
+    document_template_id: int,
+    employee_id: str,
+    company_id: int,
+    fields_data: str,
+    files: List[UploadFile]
+) -> DocumentSubmission:
+    """
+    Handles the submission of a complete onboarding document, including
+    all field types and file uploads.
+    """
+    # 1. Validate the template
+    template = await document_template_crud.get_document_template_by_id(
+        db, template_id=document_template_id, company_id=company_id
+    )
+    if not template:
+        raise APIException(status_code=404, message="Document template not found")
+
+    # 2. Upload files to S3
+    file_paths = {}
+    for file in files:
+        if file.filename:
+            folder = f"onboarding_documents/{company_id}/{employee_id}"
+            file_url = await s3_service.upload_file(file, folder=folder)
+            # Use the field name from the frontend as the key
+            file_paths[file.filename] = file_url
+
+    # 3. Parse the JSON fields data
+    try:
+        field_values = json.loads(fields_data)
+    except json.JSONDecodeError:
+        raise APIException(status_code=400, message="Invalid JSON format for fields")
+
+    # 4. Create the DocumentSubmission record
+    submission = DocumentSubmission(
+        template_id=document_template_id,
+        employee_id=employee_id,
+        company_id=company_id,
+        field_values=field_values,
+        file_paths=file_paths,
+        status="submitted"
+    )
+    db.add(submission)
+    await db.commit()
+    await db.refresh(submission)
+    return submission

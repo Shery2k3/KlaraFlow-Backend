@@ -1,6 +1,6 @@
 from fastapi import Request, APIRouter, Depends, status, File, Form, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import List, Optional
 
 from klaraflow.crud import onboarding_crud
 from klaraflow.schemas import onboarding_schema
@@ -273,4 +273,36 @@ async def upload_onboarding_document(
         data={"file_url": file_url},
         message="Document uploaded successfully",
         status_code=status.HTTP_201_CREATED
+    )
+
+@router.post("/documents/submit/{document_template_id}")
+async def submit_onboarding_document(
+    document_template_id: int,
+    employee_id: str = Form(...),
+    fields: str = Form(...),  # JSON string
+    files: List[UploadFile] = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    submission = await onboarding_crud.submit_onboarding_document(
+        db=db,
+        document_template_id=document_template_id,
+        employee_id=employee_id,
+        company_id=current_user.company_id,
+        fields_data=fields,
+        files=files
+    )
+
+    response_data = {
+        "id": submission.id,
+        "template_id": submission.template_id,
+        "employee_id": submission.employee_id,
+        "uploaded_at": submission.submitted_at,
+        "file_paths": submission.file_paths
+    }
+    
+    return create_response(
+        data=response_data,
+        message="Document submitted successfully",
+        status_code=201
     )
