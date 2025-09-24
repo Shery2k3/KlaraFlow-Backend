@@ -158,11 +158,11 @@ async def update_my_onboarding_step(
 @router.put("/todos/{todo_id}")
 async def update_todo(
     todo_id: int,
-    completed: bool, # Send completion status in the request body
+    payload: onboarding_schema.TodoItemStatusUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    await onboarding_crud.update_todo_for_user(db, user_email=current_user.email, todo_id=todo_id, completed=completed)
+    await onboarding_crud.update_todo_for_user(db, user_email=current_user.email, todo_id=todo_id, completed=payload.completed)
     return create_response(
         data=None,
         message="Todo updated successfully",

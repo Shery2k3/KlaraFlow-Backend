@@ -6,7 +6,6 @@ from fastapi import status, UploadFile
 from klaraflow.models.documents.document_submission_model import DocumentSubmission
 from klaraflow.models.onboarding.session_model import OnboardingSession
 from klaraflow.models.onboarding.task_model import OnboardingTask
-from klaraflow.models.onboarding.document_model import OnboardingDocument
 from klaraflow.models.documents.document_submission_model import DocumentSubmission 
 from klaraflow.schemas import onboarding_schema
 from klaraflow.core.security import create_access_token, get_hash_password
@@ -296,19 +295,6 @@ async def update_todo_for_user(db: AsyncSession, user_email: str, todo_id: int, 
     await db.commit()
     return {"message": "Todo updated successfully"}
 
-async def save_uploaded_document(db: AsyncSession, user_email: str, document_template_id: int, file_url: str):
-    session = await get_onboarding_session_for_user(db, user_email)
-    
-    new_document = OnboardingDocument(
-        session_id=session.id,
-        document_template_id=document_template_id,
-        file_url=file_url
-    )
-    db.add(new_document)
-    await db.commit()
-    await db.refresh(new_document)
-    return new_document
-
 async def submit_onboarding(db: AsyncSession, user_email: str):
     session = await get_onboarding_session_for_user(db, user_email)
     session.status = "completed"
@@ -319,7 +305,6 @@ async def submit_onboarding(db: AsyncSession, user_email: str):
     user.is_active = True
     
     await db.commit()
-
 
 async def update_onboarding_review_for_user(
     db: AsyncSession,

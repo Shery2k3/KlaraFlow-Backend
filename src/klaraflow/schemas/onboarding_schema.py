@@ -111,6 +111,9 @@ class TodoItemRead(TodoItemBase):
 
     class Config:
         from_attributes = True
+        
+class TodoItemStatusUpdate(BaseModel):
+    completed: bool
 
 # Onboarding Template Schemas
 class OnboardingTemplateBase(BaseModel):

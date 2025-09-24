@@ -8,7 +8,6 @@ from .company_model import Company
 from .user_model import User
 from .onboarding.session_model import OnboardingSession
 from .onboarding.task_model import OnboardingTask
-from .onboarding.document_model import OnboardingDocument
 from .onboarding.todo_item_model import TodoItem
 from .onboarding.onboarding_template_model import OnboardingTemplate
 from .settings.document_template_model import DocumentTemplate, DocumentField
