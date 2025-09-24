@@ -248,33 +248,6 @@ async def review_and_update_my_info(
         status_code=status.HTTP_200_OK
     )
 
-@router.post("/documents/upload")
-async def upload_onboarding_document(
-    document_template_id: int = Form(...),
-    file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    session = await onboarding_crud.get_onboarding_session_for_user(db, user_email=current_user.email)
-    
-    # Upload to S3
-    folder = f"onboarding_documents/{current_user.company_id}/{session.id}"
-    file_url = await s3_service.upload_file(file, folder)
-    
-    # Save document record in DB
-    await onboarding_crud.save_uploaded_document(
-        db,
-        user_email=current_user.email,
-        document_template_id=document_template_id,
-        file_url=file_url
-    )
-    
-    return create_response(
-        data={"file_url": file_url},
-        message="Document uploaded successfully",
-        status_code=status.HTTP_201_CREATED
-    )
-
 @router.post("/documents/submit/{document_template_id}")
 async def submit_onboarding_document(
     document_template_id: int,
