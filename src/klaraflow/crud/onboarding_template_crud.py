@@ -11,6 +11,7 @@ from klaraflow.models.onboarding.onboarding_template_model import (
     onboarding_template_optional_documents
 )
 from klaraflow.models.onboarding.todo_item_model import TodoItem
+from klaraflow.models.onboarding.task_model import OnboardingTask
 from klaraflow.models.settings.document_template_model import DocumentTemplate
 from klaraflow.schemas.onboarding_schema import (
     OnboardingTemplateCreate,
@@ -169,19 +170,56 @@ async def update_onboarding_template(
     
     # Update todos if provided
     if template_data.todos is not None:
-        # Delete existing todos
-        for todo in db_template.todos:
-            await db.delete(todo)
-        
-        # Create new todos
+        # Upsert todos: update existing ones, create new ones, and only delete
+        # template todos that are not present in the incoming list AND not
+        # referenced by any onboarding session tasks.
+        existing_todos = {t.id: t for t in db_template.todos if t.id is not None}
+        incoming_ids = set()
+
         for idx, todo_data in enumerate(template_data.todos):
-            db_todo = TodoItem(
-                template_id=db_template.id,
-                title=todo_data.title,
-                description=todo_data.description,
-                order_index=todo_data.order_index or idx
+            incoming_id = getattr(todo_data, "id", None)
+            if incoming_id:
+                incoming_ids.add(incoming_id)
+                if incoming_id in existing_todos:
+                    # update existing
+                    todo = existing_todos[incoming_id]
+                    todo.title = todo_data.title
+                    todo.description = todo_data.description
+                    todo.order_index = todo_data.order_index or idx
+                else:
+                    # client supplied an id that doesn't belong to this template -> treat as new
+                    db_todo = TodoItem(
+                        template_id=db_template.id,
+                        title=todo_data.title,
+                        description=todo_data.description,
+                        order_index=todo_data.order_index or idx
+                    )
+                    db.add(db_todo)
+            else:
+                # new todo
+                db_todo = TodoItem(
+                    template_id=db_template.id,
+                    title=todo_data.title,
+                    description=todo_data.description,
+                    order_index=todo_data.order_index or idx
+                )
+                db.add(db_todo)
+
+        # Determine which existing todos were removed by the client
+        to_remove_ids = [eid for eid in existing_todos.keys() if eid not in incoming_ids]
+        for eid in to_remove_ids:
+            # Prevent deletion if any onboarding session task references this todo
+            ref = await db.execute(
+                select(OnboardingTask.id).where(OnboardingTask.todo_item_id == eid).limit(1)
             )
-            db.add(db_todo)
+            if ref.scalar_one_or_none():
+                # Abort with a clear API error so frontend can decide (or user can soft-delete)
+                raise APIException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message="Cannot remove todo that is referenced by onboarding sessions",
+                )
+            # safe to delete
+            await db.delete(existing_todos[eid])
     
     # Update document associations if provided
     if template_data.required_document_ids is not None:
