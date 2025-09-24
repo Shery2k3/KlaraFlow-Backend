@@ -297,7 +297,7 @@ async def update_todo_for_user(db: AsyncSession, user_email: str, todo_id: int, 
 
 async def submit_onboarding(db: AsyncSession, user_email: str):
     session = await get_onboarding_session_for_user(db, user_email)
-    session.status = "completed"
+    session.status = "submitted"
     
     await db.commit()
 

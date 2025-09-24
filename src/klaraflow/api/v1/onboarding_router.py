@@ -137,24 +137,6 @@ async def get_my_onboarding_data(
         status_code=status.HTTP_200_OK
     )
 
-@router.put("/step", response_model=onboarding_schema.OnboardingDataRead)
-async def update_my_onboarding_step(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    session = await onboarding_crud.get_onboarding_session_for_user(db, user_email=current_user.email)
-    session.current_step += 1
-    await db.commit()
-    await db.refresh(session)
-    
-    # Return updated data
-    data = await onboarding_crud.get_onboarding_data_for_user(db, user_email=current_user.email)
-    return create_response(
-        data=data,
-        message="Onboarding step updated successfully",
-        status_code=status.HTTP_200_OK
-    )
-
 @router.put("/todos/{todo_id}")
 async def update_todo(
     todo_id: int,
@@ -240,7 +222,7 @@ async def review_and_update_my_info(
     )
     
     # Increment to step 2 (Document Upload) after review
-    await onboarding_crud.increment_step_for_user(db, user_email=current_user.email)
+    # await onboarding_crud.increment_step_for_user(db, user_email=current_user.email)
 
     return create_response(
         data=updated_data,
@@ -278,4 +260,16 @@ async def submit_onboarding_document(
         data=response_data,
         message="Document submitted successfully",
         status_code=201
+    )
+    
+@router.put("/step")
+async def increment_onboarding_step(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    await onboarding_crud.increment_step_for_user(db, user_email=current_user.email)
+    return create_response(
+        data=None,
+        message="Onboarding step incremented successfully",
+        status_code=status.HTTP_200_OK
     )
