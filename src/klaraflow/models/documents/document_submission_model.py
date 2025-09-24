@@ -11,6 +11,9 @@ class DocumentSubmission(Base):
     template_id = Column(Integer, ForeignKey("document_templates.id"), nullable=False)
     employee_id = Column(String, nullable=False)  # Reference to employee
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    # Link submission to an onboarding session (nullable because submissions may be created
+    # outside a session context or before a session is created)
+    session_id = Column(Integer, ForeignKey("onboarding_sessions.id"), nullable=True)
     
     # Store field values and file paths as JSON
     field_values = Column(JSON, nullable=False)  # {field_id: value}
@@ -26,3 +29,4 @@ class DocumentSubmission(Base):
     # Relationships
     template = relationship("DocumentTemplate")
     company = relationship("Company")
+    session = relationship("OnboardingSession", back_populates="uploaded_documents")

@@ -37,4 +37,4 @@ class OnboardingSession(Base):
     
     tasks = relationship("OnboardingTask", back_populates="session")
     template = relationship("OnboardingTemplate", back_populates="sessions")
-    uploaded_documents = relationship("OnboardingDocument", back_populates="session")
+    uploaded_documents = relationship("DocumentSubmission", back_populates="session")
