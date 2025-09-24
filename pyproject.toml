@@ -22,6 +22,7 @@ python-multipart = "^0.0.20"
 fastapi-mail = "^1.5.0"
 sqlalchemy = "^2.0.43"
 boto3 = "^1.40.33"
+alembic = "^1.16.5"
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = ">=0.27.0,<0.28.0"
