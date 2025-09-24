@@ -299,11 +299,6 @@ async def submit_onboarding(db: AsyncSession, user_email: str):
     session = await get_onboarding_session_for_user(db, user_email)
     session.status = "completed"
     
-    # Update user status to active
-    from klaraflow.crud import user_crud
-    user = await user_crud.get_user_by_email(db, email=user_email)
-    user.is_active = True
-    
     await db.commit()
 
 async def update_onboarding_review_for_user(
