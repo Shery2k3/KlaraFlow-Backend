@@ -401,3 +401,50 @@ async def submit_onboarding_document(
     await db.commit()
     await db.refresh(submission)
     return submission
+
+
+async def list_onboarding_sessions(
+    db: AsyncSession,
+    company_id: int | None = None,
+    status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[onboarding_schema.OnboardingSessionRead]:
+    """Return onboarding sessions optionally filtered by company and status.
+
+    - company_id: if provided, restrict results to that company
+    - status: if provided, filter by onboarding session status (pending, in_progress, submitted, expired, etc.)
+    - limit/offset: simple pagination
+    Returns a list of Pydantic-validated OnboardingSessionRead objects.
+    """
+    stmt = select(OnboardingSession)
+    if company_id is not None:
+        stmt = stmt.where(OnboardingSession.company_id == company_id)
+    if status is not None:
+        stmt = stmt.where(OnboardingSession.status == status)
+    stmt = stmt.limit(limit).offset(offset)
+
+    result = await db.execute(stmt)
+    sessions = result.scalars().all()
+
+    # Convert ORM objects to Pydantic models for a stable shape
+    sessions_out: list[onboarding_schema.OnboardingSessionRead] = []
+    for s in sessions:
+        try:
+            sessions_out.append(onboarding_schema.OnboardingSessionRead.model_validate(s))
+        except Exception:
+            # Fallback: build minimal dict if validation fails for any reason
+            sessions_out.append(onboarding_schema.OnboardingSessionRead(
+                id=getattr(s, "id", None),
+                company_id=getattr(s, "company_id", None),
+                new_employee_email=getattr(s, "new_employee_email", None),
+                status=getattr(s, "status", None),
+                created_at=getattr(s, "created_at", None),
+                expires_at=getattr(s, "expires_at", None),
+                current_step=getattr(s, "current_step", 0),
+            ))
+
+    return sessions_out
+    await db.commit()
+    await db.refresh(submission)
+    return submission

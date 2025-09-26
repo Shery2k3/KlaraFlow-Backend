@@ -1,4 +1,4 @@
-from fastapi import Request, APIRouter, Depends, status, File, Form, UploadFile
+from fastapi import Request, APIRouter, Depends, status, File, Form, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
@@ -20,6 +20,31 @@ logging.basicConfig(
 )
 
 router = APIRouter()
+
+
+@router.get("/sessions", response_model=List[onboarding_schema.OnboardingSessionRead])
+async def list_onboarding_sessions(
+    status_filter: Optional[str] = Query(default=None, alias="status"),
+    limit: int = 100,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_active_admin)
+):
+    """Admin endpoint to list onboarding sessions.
+
+    - Optional `status` query param filters by onboarding status (e.g., pending, in_progress, submitted)
+    - `limit` and `offset` provide simple pagination
+    Returns a list of onboarding sessions for the admin's company.
+    """
+    company_id = current_admin.company_id
+    sessions = await onboarding_crud.list_onboarding_sessions(db=db, company_id=company_id, status=status_filter, limit=limit, offset=offset)
+    # sessions is a list of Pydantic models; convert to serializable dicts
+    data = [s.model_dump(mode="json") if hasattr(s, "model_dump") else s for s in sessions]
+    return create_response(
+        data=data,
+        message="Onboarding sessions retrieved successfully",
+        status_code=status.HTTP_200_OK
+    )
 
 @router.post(
     "/invite", 
