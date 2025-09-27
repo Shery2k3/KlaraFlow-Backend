@@ -30,6 +30,9 @@ async def seed_database():
 
     # Create all tables defined by our models
     async with engine.begin() as conn:
+        
+        await conn.exec_driver_sql("SET search_path TO public")
+        
         # Dropping all tables for a clean seed (optional, for development)
         # await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
