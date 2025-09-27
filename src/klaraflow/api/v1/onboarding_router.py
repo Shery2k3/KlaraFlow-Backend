@@ -260,7 +260,7 @@ async def submit_onboarding_document(
     document_template_id: int,
     employee_id: str = Form(...),
     fields: str = Form(...),  # JSON string
-    files: List[UploadFile] = File(...),
+    files: Optional[List[UploadFile]] = File(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):

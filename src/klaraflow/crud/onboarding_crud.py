@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import status, UploadFile
@@ -360,7 +360,7 @@ async def submit_onboarding_document(
     employee_id: str,
     company_id: int,
     fields_data: str,
-    files: List[UploadFile]
+    files: Optional[List[UploadFile]]
 ) -> DocumentSubmission:
     """
     Handles the submission of a complete onboarding document, including
@@ -375,12 +375,13 @@ async def submit_onboarding_document(
 
     # 2. Upload files to S3
     file_paths = {}
-    for file in files:
-        if file.filename:
-            folder = f"onboarding_documents/{company_id}/{employee_id}"
-            file_url = await s3_service.upload_file(file, folder=folder)
-            # Use the field name from the frontend as the key
-            file_paths[file.filename] = file_url
+    if files:
+        for file in files:
+            if file.filename:
+                folder = f"onboarding_documents/{company_id}/{employee_id}"
+                file_url = await s3_service.upload_file(file, folder=folder)
+                # Use the field name from the frontend as the key
+                file_paths[file.filename] = file_url
 
     # 3. Parse the JSON fields data
     try:
