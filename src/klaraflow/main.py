@@ -24,9 +24,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_exception_handler(APIException, api_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-
 origins = [
     "http://localhost:3000",
 ]
@@ -38,6 +35,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_exception_handler(APIException, api_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 # Welcome route
 @app.get("/")
