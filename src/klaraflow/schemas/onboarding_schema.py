@@ -37,6 +37,10 @@ class OnboardingSessionRead(BaseModel):
     expires_at: datetime
     current_step: int
     
+    class Config:
+        # Allow Pydantic to read attributes from ORM/SQLAlchemy model instances
+        from_attributes = True
+    
     
 # Request model used when the invited user reviews and edits their information
 class OnboardingReviewUpdateRequest(BaseModel):
