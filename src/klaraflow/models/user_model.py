@@ -19,7 +19,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
-    profile_picure_url = Column(String, nullable=True)
+    # NOTE: fixed typo and use consistent naming
+    profile_picture_url = Column(String, nullable=True)
     
     # --- Status & Roles ---
     is_active = Column(Boolean, default=False) # Should be False until onboarding is complete
@@ -31,8 +32,13 @@ class User(Base):
     # --- Employee Details (Can be in a separate Profile model later) ---
     phone = Column(String, nullable=True)
     gender = Column(String, nullable=True)
-    designation = Column(String, nullable=True)
-    department = Column(String, nullable=True)
+    # Reference by FK to allow normalized lookups and relationships
+    designation_id = Column(Integer, ForeignKey("designations.id"), nullable=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
+
+    # Relationships to lookup objects when needed
+    designation = relationship("Designation", back_populates="employees")
+    department = relationship("Department", back_populates="employees")
     jobType = Column(String, nullable=True)
     hiringDate = Column(String, nullable=True)
     reportTo = Column(String, nullable=True)

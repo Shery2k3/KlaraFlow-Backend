@@ -25,7 +25,9 @@ class OnboardingSession(Base):
     gender = Column(String, nullable=True)
     userRole = Column(String, nullable=True)
     designation = Column(String, nullable=True)
-    department = Column(String, nullable=True)
+    # Store references to department/designation by id for normalization
+    designation_id = Column(Integer, ForeignKey("designations.id"), nullable=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     jobType = Column(String, nullable=True)
     hiringDate = Column(String, nullable=True)
     reportTo = Column(String, nullable=True)
