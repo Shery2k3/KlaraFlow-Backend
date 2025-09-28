@@ -132,8 +132,7 @@ async def update_onboarding_step(db: AsyncSession, token: str, step_data: onboar
 
 async def get_onboarding_session_for_user(db: AsyncSession, user_email: str) -> OnboardingSession:
     statement = select(OnboardingSession).where(
-        OnboardingSession.new_employee_email == user_email,
-        OnboardingSession.status == "in_progress"
+        OnboardingSession.new_employee_email == user_email
     )
     result = await db.execute(statement)
     session = result.scalar_one_or_none()
