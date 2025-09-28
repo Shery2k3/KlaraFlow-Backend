@@ -408,6 +408,9 @@ async def list_onboarding_sessions(
     db: AsyncSession,
     company_id: int | None = None,
     status: str | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
+    email: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[onboarding_schema.OnboardingSessionRead]:
@@ -423,6 +426,12 @@ async def list_onboarding_sessions(
         stmt = stmt.where(OnboardingSession.company_id == company_id)
     if status is not None:
         stmt = stmt.where(OnboardingSession.status == status)
+    if first_name is not None:
+        stmt = stmt.where(OnboardingSession.firstName.ilike(f"%{first_name}%"))
+    if last_name is not None:
+        stmt = stmt.where(OnboardingSession.lastName.ilike(f"%{last_name}%"))
+    if email is not None:
+        stmt = stmt.where(OnboardingSession.new_employee_email.ilike(f"%{email}%"))
     stmt = stmt.limit(limit).offset(offset)
 
     result = await db.execute(stmt)
@@ -439,6 +448,9 @@ async def list_onboarding_sessions(
                 id=getattr(s, "id", None),
                 company_id=getattr(s, "company_id", None),
                 new_employee_email=getattr(s, "new_employee_email", None),
+                profilePic=getattr(s, "profile_picture_url", None),
+                firstName=getattr(s, "firstName", None),
+                lastName=getattr(s, "lastName", None),
                 status=getattr(s, "status", None),
                 created_at=getattr(s, "created_at", None),
                 expires_at=getattr(s, "expires_at", None),

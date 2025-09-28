@@ -32,6 +32,10 @@ class OnboardingSessionRead(BaseModel):
     id: int
     company_id: int
     new_employee_email: EmailStr
+    profilePic: Optional[str] = None
+    firstName: str | None
+    lastName: str | None
+    empId: str | None
     status: str
     created_at: datetime
     expires_at: datetime

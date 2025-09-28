@@ -25,6 +25,9 @@ router = APIRouter()
 @router.get("/sessions", response_model=List[onboarding_schema.OnboardingSessionRead])
 async def list_onboarding_sessions(
     status_filter: Optional[str] = Query(default=None, alias="status"),
+    firstname: Optional[str] = Query(default=None, alias="firstName"),
+    lastname: Optional[str] = Query(default=None, alias="lastName"),
+    email: Optional[str] = Query(default=None, alias="email"),
     limit: int = 100,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
