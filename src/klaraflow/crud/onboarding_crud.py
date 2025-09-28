@@ -461,3 +461,40 @@ async def list_onboarding_sessions(
     await db.commit()
     await db.refresh(submission)
     return submission
+
+
+async def onboard_employee(db: AsyncSession, *, session_id: int, company_id: int):
+    """Finalize onboarding for a session.
+
+    - session_id: the OnboardingSession.id
+    - company_id: scope check to ensure the session belongs to the admin's company
+    Returns the updated session and user email.
+    """
+    stmt = select(OnboardingSession).where(
+        OnboardingSession.id == session_id,
+        OnboardingSession.company_id == company_id
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise APIException(status_code=status.HTTP_404_NOT_FOUND, message="Onboarding session not found")
+
+    # Update session status
+    if session.status != "submitted":
+        raise APIException(status_code=status.HTTP_400_BAD_REQUEST, message="Onboarding session is not in a submittable state")
+    
+    session.status = "onboarded"
+
+    # Find existing user by email
+    user = await user_crud.get_user_by_email(db, email=session.new_employee_email)
+    if user:
+        user.is_active = True
+    else:
+        # Create the user from the onboarding session with a temporary password
+        temp_hashed = get_hash_password("temporary-password")
+        user = await user_crud.create_user_from_onboarding(db, session=session, hashed_password=temp_hashed)
+
+    await db.commit()
+    await db.refresh(session)
+
+    return session, user

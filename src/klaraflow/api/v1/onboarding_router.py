@@ -301,3 +301,24 @@ async def increment_onboarding_step(
         message="Onboarding step incremented successfully",
         status_code=status.HTTP_200_OK
     )
+
+
+@router.put("/onboard")
+async def onboard_employee(
+    sessionId: int = Query(..., alias="sessionId"),
+    db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(get_current_active_admin)
+):
+    """Admin endpoint to finalize onboarding for a session.
+
+    - sessionId (query): the onboarding session id to onboard
+    - Ensures the session belongs to the admin's company
+    - Marks the onboarding session.status = 'onboarded'
+    - Finds or creates the corresponding User and marks is_active = True
+    """
+    session, user = await onboarding_crud.onboard_employee(db, session_id=sessionId, company_id=current_admin.company_id)
+    return create_response(
+        data={"session_id": session.id, "status": session.status, "user_email": session.new_employee_email},
+        message="Employee onboarded successfully",
+        status_code=status.HTTP_200_OK
+    )
