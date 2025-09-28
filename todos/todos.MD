@@ -7,4 +7,5 @@
 ## Reference User tables' FK id inside Onboarding_Sessions instead of creating one there
 ## Use employment lifecycle state in Users table with enums: ("Invited", "Onboarded", "Terminated", "Resigned", "Inactive (catch all)" )
 ## Use system access flags (purely technical): "in_enabled", "can_login"
-## Make the vars name in Onboarding Module consistent
+
+# Make the vars name in Onboarding Module consistent

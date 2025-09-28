@@ -27,7 +27,7 @@ async def invite_new_employee(db: AsyncSession,invite_data: onboarding_schema.On
     #? Check for existing pending invites
     existing_session = select(OnboardingSession).where(
         OnboardingSession.new_employee_email == invite_data.email,
-        OnboardingSession.status == "pending"
+        # OnboardingSession.status == "pending"
     )
     result = await db.execute(existing_session)
     if result.scalar_one_or_none():
