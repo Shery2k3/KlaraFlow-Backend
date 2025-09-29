@@ -12,7 +12,7 @@ class OnboardingSession(Base):
 
     new_employee_email = Column(String, nullable=False, index=True)
     status = Column(String, default="pending")
-    current_step = Column(Integer, default=0)
+    current_step = Column(Integer, default=1)
     
     invitation_token = Column(String, nullable=False, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
