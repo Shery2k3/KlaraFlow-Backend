@@ -421,6 +421,7 @@ async def list_onboarding_sessions(
     Returns a list of Pydantic-validated OnboardingSessionRead objects.
     """
     stmt = select(OnboardingSession)
+    stmt = stmt.where(OnboardingSession.status != "onboarded")
     if company_id is not None:
         stmt = stmt.where(OnboardingSession.company_id == company_id)
     if status is not None:
