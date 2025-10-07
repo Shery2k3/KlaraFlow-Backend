@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Time, Date, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from klaraflow.models.base import Base
+from ..models.base import Base
 
 
 class Timesheet(Base):
