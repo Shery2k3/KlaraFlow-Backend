@@ -8,6 +8,7 @@ from klaraflow.api.v1 import auth_router, onboarding_router
 from klaraflow.api.v1.settings import document_router, onboarding_template_router
 from klaraflow.api.v1.company_settings import department_router, designation_router
 from klaraflow.api.v1.employees import employee_router
+from klaraflow.timesheet import router as timesheet_router
 from klaraflow.base.exceptions import api_exception_handler, validation_exception_handler, APIException
 
 @asynccontextmanager
@@ -70,6 +71,9 @@ app.include_router(designation_router.router, prefix="/api/v1/settings/designati
 
 # --- NEW: Employee Management Routes ---
 app.include_router(employee_router.router, prefix="/api/v1/employees", tags=["Employees"])
+
+# --- NEW: Timesheet Routes ---
+app.include_router(timesheet_router.router, prefix="/api/v1/timesheet", tags=["Timesheets"])
 
 # poetry run uvicorn src.main:app --reload --port 3000
 # poetry run poe dev

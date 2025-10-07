@@ -14,3 +14,6 @@ from .settings.document_template_model import DocumentTemplate, DocumentField
 from .documents.document_submission_model import DocumentSubmission
 from .department_model import Department
 from .designation_model import Designation
+
+# Note: Timesheet models are imported separately in alembic/env.py
+# to avoid circular imports. They are at klaraflow.timesheet.models

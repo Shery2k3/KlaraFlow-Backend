@@ -11,7 +11,9 @@ from alembic import context
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from klaraflow.models.base import Base
-from klaraflow.models import * 
+from klaraflow.models import *
+# Import timesheet models separately to ensure they're registered
+from klaraflow.timesheet.models import Timesheet, TimeEntry 
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
