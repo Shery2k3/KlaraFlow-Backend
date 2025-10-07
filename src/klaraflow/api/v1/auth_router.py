@@ -6,6 +6,8 @@ from klaraflow.config.database import get_db
 from klaraflow.core.security import create_access_token, verify_password
 from klaraflow.base.exceptions import APIException
 from klaraflow.base.responses import create_response
+from klaraflow.dependencies.auth import get_current_user, get_current_active_user
+from klaraflow.models.user_model import User
 
 router = APIRouter()
 
@@ -54,3 +56,23 @@ async def activate_account(
         message="Account activated successfully",
         status_code=status.HTTP_200_OK
     )
+    
+@router.get("/my-data", response_model=user_schema.UserPublic)
+async def get_my_data(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get the current authenticated user's data.
+    The user is automatically extracted from the JWT token via the dependency.
+    """
+    
+    # Return the user directly from the dependency (already loaded from DB)
+    return create_response(
+        data=current_user, 
+        message="User data retrieved successfully",
+        status_code=status.HTTP_200_OK
+    )
+    
+    # TODO
+    # We can also re-fetch or get additional data if needed from CRUD function
