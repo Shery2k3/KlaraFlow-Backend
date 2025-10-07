@@ -14,3 +14,4 @@ from .settings.document_template_model import DocumentTemplate, DocumentField
 from .documents.document_submission_model import DocumentSubmission
 from .department_model import Department
 from .designation_model import Designation
+from klaraflow.timesheet.models import Timesheet, TimeEntry
